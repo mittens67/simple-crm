@@ -1,0 +1,12 @@
+.dashboard {
+    padding: 2rem;
+    display: flex;
+
+    &-window {
+        flex: 1;
+        height: calc(100vh - 4rem);
+        overflow: auto;
+        scrollbar-width: none;
+        border-radius: 2rem;
+    }
+}
