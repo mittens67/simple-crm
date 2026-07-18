@@ -16,7 +16,7 @@ interface Customer {
   name: string;
   email: string;
   phone: string;
-  assigned_rep: {
+  assigned_rep?: {
     id: string;
     name: string;
     email: string;
@@ -44,6 +44,10 @@ const Customers = () => {
     onCompleted: () => {
       refetch_customers();
       set_modal_open(false);
+    },
+    onError: (error) => {
+      console.error('Create customer error:', error.message);
+      alert(`Error creating customer: ${error.message}`);
     },
   });
 
@@ -137,7 +141,7 @@ const Customers = () => {
               <td>{customer.name}</td>
               <td>{customer.email}</td>
               <td>{customer.phone}</td>
-              <td>{customer.assigned_rep.name}</td>
+              <td>{customer.assigned_rep?.name || 'Unassigned'}</td>
               <td className="actions">
                 {can('customers.update') && (
                   <button className="btn-small" onClick={() => handle_open_edit(customer)}>

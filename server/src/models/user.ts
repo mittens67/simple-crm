@@ -4,7 +4,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
-  role_id: mongoose.Types.ObjectId; 
+  role_ids: mongoose.Types.ObjectId[];
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -13,9 +13,9 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }, // You’ll hash this
+    password: { type: String, required: true },
     name: { type: String, required: true },
-    role_id: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
+    role_ids: [{ type: Schema.Types.ObjectId, ref: 'Role' }],
     is_active: { type: Boolean, default: true },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }

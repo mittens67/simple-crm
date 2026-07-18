@@ -6,10 +6,16 @@ interface Lead {
   email: string;
   phone: string;
   status: string;
-  assigned_rep: {
+  assigned_rep?: {
     id: string;
     name: string;
   };
+  customer?: {
+    id: string;
+    name: string;
+  };
+  sales_notes?: string;
+  archive_notes?: string;
 }
 
 interface User {
@@ -30,8 +36,10 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
     name: '',
     email: '',
     phone: '',
-    status: 'New',
+    status: 'Open',
     assigned_rep_id: '',
+    sales_notes: '',
+    archive_notes: '',
   });
 
   useEffect(() => {
@@ -41,7 +49,9 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
         email: lead.email,
         phone: lead.phone,
         status: lead.status,
-        assigned_rep_id: lead.assigned_rep.id,
+        assigned_rep_id: lead.assigned_rep?.id || '',
+        sales_notes: lead.sales_notes || '',
+        archive_notes: lead.archive_notes || '',
       });
     }
   }, [lead]);
@@ -53,19 +63,20 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
 
   const handle_submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (lead) {
-      const { name, email, phone, status, assigned_rep_id } = form_data;
-      on_save({
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(phone && { phone }),
-        ...(status && { status }),
-        ...(assigned_rep_id && { assigned_rep_id }),
-      });
-    } else {
-      on_save(form_data);
-    }
+    const { name, email, phone, status, assigned_rep_id, sales_notes, archive_notes } = form_data;
+    const input = {
+      name,
+      email,
+      phone,
+      status,
+      ...(assigned_rep_id && { assigned_rep_id }),
+      ...(sales_notes && { sales_notes }),
+      ...(archive_notes && { archive_notes }),
+    };
+    on_save(input);
   };
+
+  const is_terminal = lead && (lead.status === 'Archived' || lead.status === 'Converted');
 
   return (
     <div className="modal-overlay" onClick={on_close}>
@@ -85,6 +96,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="name"
               value={form_data.name}
               onChange={handle_change}
+              disabled={is_terminal}
               required
             />
           </div>
@@ -96,6 +108,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="email"
               value={form_data.email}
               onChange={handle_change}
+              disabled={is_terminal}
               required
             />
           </div>
@@ -107,31 +120,30 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="phone"
               value={form_data.phone}
               onChange={handle_change}
+              disabled={is_terminal}
               required
             />
           </div>
 
           <div className="form-group">
             <label>Status</label>
-            <select name="status" value={form_data.status} onChange={handle_change}>
-              <option>New</option>
-              <option>Contacted</option>
-              <option>Qualified</option>
-              <option>Unqualified</option>
+            <select name="status" value={form_data.status} onChange={handle_change} disabled={is_terminal}>
+              <option>Open</option>
+              <option>Pending</option>
+              <option>Archived</option>
               <option>Converted</option>
-              <option>Deleted</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Assigned Rep *</label>
+            <label>Assigned Rep</label>
             <select
               name="assigned_rep_id"
               value={form_data.assigned_rep_id}
               onChange={handle_change}
-              required
+              disabled={is_terminal}
             >
-              <option value="">Select a rep</option>
+              <option value="">Unassigned</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
@@ -140,13 +152,43 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
             </select>
           </div>
 
+          {form_data.status !== 'Archived' && (
+            <div className="form-group">
+              <label>Sales Notes</label>
+              <textarea
+                name="sales_notes"
+                value={form_data.sales_notes}
+                onChange={handle_change}
+                disabled={is_terminal}
+                rows={3}
+                placeholder="Track conversations, interests, objections..."
+              />
+            </div>
+          )}
+
+          {(form_data.status === 'Archived' || form_data.status === 'Converted') && (
+            <div className="form-group">
+              <label>Archive Notes</label>
+              <textarea
+                name="archive_notes"
+                value={form_data.archive_notes}
+                onChange={handle_change}
+                disabled={is_terminal && form_data.status === 'Converted'}
+                rows={3}
+                placeholder="Reason for archiving or converting..."
+              />
+            </div>
+          )}
+
           <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={on_close}>
-              Cancel
+              Close
             </button>
-            <button type="submit" className="btn-primary">
-              {lead ? 'Update' : 'Create'}
-            </button>
+            {!is_terminal && (
+              <button type="submit" className="btn-primary">
+                {lead ? 'Update' : 'Create'}
+              </button>
+            )}
           </div>
         </form>
       </div>

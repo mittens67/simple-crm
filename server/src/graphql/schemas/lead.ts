@@ -2,12 +2,10 @@ import { gql } from 'graphql-tag';
 
 export default gql`
     enum LeadStatus {
-        New
-        Contacted
-        Qualified
-        Unqualified
+        Open
+        Pending
+        Archived
         Converted
-        Deleted
     }
 
     type Lead {
@@ -16,7 +14,10 @@ export default gql`
         email: String!
         phone: String!
         status: LeadStatus!
-        assigned_rep: User!
+        assigned_rep: User
+        customer: Customer
+        sales_notes: String
+        archive_notes: String
         created_at: String
         updated_at: String
     }
@@ -26,7 +27,8 @@ export default gql`
         email: String!
         phone: String!
         status: LeadStatus
-        assigned_rep_id: ID!
+        assigned_rep_id: ID
+        sales_notes: String
     }
 
     input UpdateLead {
@@ -35,6 +37,8 @@ export default gql`
         phone: String
         status: LeadStatus
         assigned_rep_id: ID
+        sales_notes: String
+        archive_notes: String
     }
 
     type Mutation {

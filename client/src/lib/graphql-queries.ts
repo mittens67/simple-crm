@@ -25,6 +25,12 @@ export const LEADS_QUERY = gql`
         name
         email
       }
+      customer {
+        id
+        name
+      }
+      sales_notes
+      archive_notes
       created_at
       updated_at
     }
@@ -44,6 +50,12 @@ export const LEAD_QUERY = gql`
         name
         email
       }
+      customer {
+        id
+        name
+      }
+      sales_notes
+      archive_notes
       created_at
       updated_at
     }
@@ -63,6 +75,12 @@ export const CREATE_LEAD_MUTATION = gql`
         name
         email
       }
+      customer {
+        id
+        name
+      }
+      sales_notes
+      archive_notes
       created_at
       updated_at
     }
@@ -82,6 +100,12 @@ export const UPDATE_LEAD_MUTATION = gql`
         name
         email
       }
+      customer {
+        id
+        name
+      }
+      sales_notes
+      archive_notes
       created_at
       updated_at
     }
@@ -384,10 +408,6 @@ export const USERS_QUERY = gql`
       id
       name
       email
-      role {
-        id
-        name
-      }
     }
   }
 `;

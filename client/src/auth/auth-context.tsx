@@ -36,8 +36,10 @@ type Status = 'loading' | 'authenticated' | 'unauthenticated';
 interface AuthContextValue {
   user: AuthUser | null;
   status: Status;
+  current_role_index: number;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  switch_role: (role_index: number) => void;
   can: (permission: string) => boolean;
 }
 
@@ -47,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const client = useApolloClient();
   const [user, set_user] = useState<AuthUser | null>(null);
   const [status, set_status] = useState<Status>('loading');
+  const [current_role_index, set_current_role_index] = useState(0);
 
   // Silent refresh on mount so a page reload keeps the session.
   useEffect(() => {
@@ -79,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const payload = data.login;
       set_access_token(payload.accessToken);
       set_user(payload.user);
+      set_current_role_index(0);
       set_status('authenticated');
     },
     [client]
@@ -90,18 +94,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       set_access_token(null);
       set_user(null);
+      set_current_role_index(0);
       set_status('unauthenticated');
       await client.clearStore();
     }
   }, [client]);
 
+  const switch_role = useCallback((role_index: number) => {
+    if (user && role_index >= 0 && role_index < user.roles.length) {
+      set_current_role_index(role_index);
+    }
+  }, [user]);
+
   const can = useCallback(
-    (permission: string) => has_permission(user?.role?.permissions, permission),
-    [user]
+    (permission: string) => {
+      if (!user || user.roles.length === 0) return false;
+      const current_role = user.roles[current_role_index];
+      return has_permission(current_role?.permissions, permission);
+    },
+    [user, current_role_index]
   );
 
   return (
-    <AuthContext.Provider value={{ user, status, login, logout, can }}>
+    <AuthContext.Provider value={{ user, status, current_role_index, login, logout, switch_role, can }}>
       {children}
     </AuthContext.Provider>
   );

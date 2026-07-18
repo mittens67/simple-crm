@@ -17,11 +17,17 @@ interface Lead {
   email: string;
   phone: string;
   status: string;
-  assigned_rep: {
+  assigned_rep?: {
     id: string;
     name: string;
     email: string;
   };
+  customer?: {
+    id: string;
+    name: string;
+  };
+  sales_notes?: string;
+  archive_notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +51,10 @@ const Leads = () => {
     onCompleted: () => {
       refetch_leads();
       set_modal_open(false);
+    },
+    onError: (error) => {
+      console.error('Create lead error:', error.message);
+      alert(`Error creating lead: ${error.message}`);
     },
   });
 
@@ -130,6 +140,7 @@ const Leads = () => {
             <th>Phone</th>
             <th>Status</th>
             <th>Assigned Rep</th>
+            <th>Converted To</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -144,14 +155,20 @@ const Leads = () => {
                   {lead.status}
                 </span>
               </td>
-              <td>{lead.assigned_rep.name}</td>
+              <td>{lead.assigned_rep?.name || 'Unassigned'}</td>
+              <td>{lead.customer?.name || '-'}</td>
               <td className="actions">
-                {can('leads.update') && (
+                {can('leads.update') && lead.status !== 'Archived' && lead.status !== 'Converted' && (
                   <button className="btn-small" onClick={() => handle_open_edit(lead)}>
                     Edit
                   </button>
                 )}
-                {can('leads.delete') && (
+                {can('leads.update') && (lead.status === 'Archived' || lead.status === 'Converted') && (
+                  <button className="btn-small" onClick={() => handle_open_edit(lead)}>
+                    View
+                  </button>
+                )}
+                {can('leads.delete') && lead.status !== 'Archived' && lead.status !== 'Converted' && (
                   <button className="btn-small btn-danger" onClick={() => handle_delete(lead.id)}>
                     Delete
                   </button>

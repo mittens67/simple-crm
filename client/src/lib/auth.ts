@@ -2,15 +2,17 @@
 // AuthContext. The access token is deliberately never persisted; the httpOnly
 // refresh cookie is what survives reloads.
 
+export interface AuthRole {
+  id: string;
+  name: string;
+  permissions: Record<string, boolean>;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: {
-    id: string;
-    name: string;
-    permissions: Record<string, boolean>;
-  };
+  roles: AuthRole[];
 }
 
 let access_token: string | null = null;
@@ -29,7 +31,7 @@ export const USER_FIELDS = `
   id
   name
   email
-  role {
+  roles {
     id
     name
     permissions

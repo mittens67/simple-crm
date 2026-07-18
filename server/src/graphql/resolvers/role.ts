@@ -58,7 +58,7 @@ export default {
     deleteRole: async (_: any, { id }: any, context: ApolloContext) => {
       require_permission(context, 'roles.delete');
 
-      const assigned_users = await User.countDocuments({ role_id: id });
+      const assigned_users = await User.countDocuments({ role_ids: id });
       if (assigned_users > 0) {
         throw new GraphQLError(
           `Cannot delete role: ${assigned_users} user(s) still assigned to it`,

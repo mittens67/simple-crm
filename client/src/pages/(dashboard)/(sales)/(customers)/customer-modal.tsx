@@ -5,7 +5,7 @@ interface Customer {
   name: string;
   email: string;
   phone: string;
-  assigned_rep: {
+  assigned_rep?: {
     id: string;
     name: string;
   };
@@ -38,7 +38,7 @@ const CustomerModal = ({ customer, users, on_save, on_close }: CustomerModalProp
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
-        assigned_rep_id: customer.assigned_rep.id,
+        assigned_rep_id: customer.assigned_rep?.id || '',
       });
     }
   }, [customer]);
@@ -50,17 +50,14 @@ const CustomerModal = ({ customer, users, on_save, on_close }: CustomerModalProp
 
   const handle_submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customer) {
-      const { name, email, phone, assigned_rep_id } = form_data;
-      on_save({
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(phone && { phone }),
-        ...(assigned_rep_id && { assigned_rep_id }),
-      });
-    } else {
-      on_save(form_data);
-    }
+    const { name, email, phone, assigned_rep_id } = form_data;
+    const input = {
+      name,
+      email,
+      phone,
+      ...(assigned_rep_id && { assigned_rep_id }),
+    };
+    on_save(input);
   };
 
   return (
@@ -108,14 +105,13 @@ const CustomerModal = ({ customer, users, on_save, on_close }: CustomerModalProp
           </div>
 
           <div className="form-group">
-            <label>Assigned Rep *</label>
+            <label>Assigned Rep</label>
             <select
               name="assigned_rep_id"
               value={form_data.assigned_rep_id}
               onChange={handle_change}
-              required
             >
-              <option value="">Select a rep</option>
+              <option value="">Unassigned</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}

@@ -5,7 +5,7 @@ export default gql`
     id: ID!
     name: String!
     email: String!
-    role: Role!
+    roles: [Role!]!
     is_active: Boolean!
     created_at: String
     updated_at: String
@@ -20,15 +20,29 @@ export default gql`
     name: String!
     email: String!
     password: String!
-    role_id: ID!
+    role_ids: [ID!]!
   }
 
   input UpdateUserInput {
     name: String
     email: String
     password: String
-    role_id: ID
+    role_ids: [ID!]
     is_active: Boolean
+  }
+
+  type UserRole {
+    id: ID!
+    name: String!
+    permissions: JSON
+  }
+
+  input AddUserRoleInput {
+    role_id: ID!
+  }
+
+  input RemoveUserRoleInput {
+    role_id: ID!
   }
 
   input LoginInput {
@@ -45,6 +59,8 @@ export default gql`
     createUser(input: CreateUserInput!): User!
     updateUser(id: ID!, input: UpdateUserInput!): User!
     deleteUser(id: ID!): Boolean!
+    addUserRole(user_id: ID!, role_id: ID!): User!
+    removeUserRole(user_id: ID!, role_id: ID!): User!
 
     login(input: LoginInput!): AuthPayload!
     refreshToken: AuthPayload!

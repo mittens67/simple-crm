@@ -6,7 +6,7 @@ export default gql`
     name: String!
     email: String!
     phone: String!
-    assigned_rep: User!
+    assigned_rep: User
     created_at: String
     updated_at: String
   }
@@ -15,7 +15,7 @@ export default gql`
     name: String!
     email: String!
     phone: String!
-    assigned_rep_id: ID!
+    assigned_rep_id: ID
   }
 
   input UpdateCustomerInput {

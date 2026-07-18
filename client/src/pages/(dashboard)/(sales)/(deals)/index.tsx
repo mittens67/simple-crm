@@ -19,7 +19,7 @@ interface Deal {
     id: string;
     name: string;
   };
-  owner: {
+  owner?: {
     id: string;
     name: string;
   };
@@ -54,6 +54,10 @@ const Deals = () => {
     onCompleted: () => {
       refetch_deals();
       set_modal_open(false);
+    },
+    onError: (error) => {
+      console.error('Create deal error:', error.message);
+      alert(`Error creating deal: ${error.message}`);
     },
   });
 
@@ -149,7 +153,7 @@ const Deals = () => {
             <tr key={deal.id}>
               <td>{deal.title}</td>
               <td>{deal.customer.name}</td>
-              <td>{deal.owner.name}</td>
+              <td>{deal.owner?.name || 'Unassigned'}</td>
               <td>${deal.value.toLocaleString()}</td>
               <td>
                 <span className={`status status-${deal.status.toLowerCase()}`}>

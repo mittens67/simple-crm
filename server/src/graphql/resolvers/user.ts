@@ -36,7 +36,7 @@ export default {
     createUser: async (_: any, { input }: any, context: ApolloContext) => {
       require_permission(context, 'users.create');
 
-      const { name, email, password, role_id } = input;
+      const { name, email, password, role_ids } = input;
 
       const existing = await User.findOne({ email });
       if (existing) {
@@ -45,9 +45,10 @@ export default {
         });
       }
 
-      const role = await Role.findById(role_id);
-      if (!role) {
-        throw new GraphQLError('Role not found', {
+      // Verify all roles exist
+      const roles = await Role.find({ _id: { $in: role_ids } });
+      if (roles.length !== role_ids.length) {
+        throw new GraphQLError('One or more roles not found', {
           extensions: { code: 'BAD_USER_INPUT' },
         });
       }
@@ -56,12 +57,12 @@ export default {
         name,
         email,
         password: await bcrypt.hash(password, 10),
-        role_id,
+        role_ids,
         is_active: true,
       });
 
       await user.save();
-      return user;
+      return await user.populate('role_ids');
     },
 
     updateUser: async (_: any, { id, input }: any, context: ApolloContext) => {
@@ -69,10 +70,15 @@ export default {
 
       const update_data: any = { ...input };
 
-      if (input.role_id) {
-        const role = await Role.findById(input.role_id);
-        if (!role) {
-          throw new GraphQLError('Role not found', {
+      if (input.role_ids) {
+        if (input.role_ids.length === 0) {
+          throw new GraphQLError('User must have at least one role', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
+        const roles = await Role.find({ _id: { $in: input.role_ids } });
+        if (roles.length !== input.role_ids.length) {
+          throw new GraphQLError('One or more roles not found', {
             extensions: { code: 'BAD_USER_INPUT' },
           });
         }
@@ -84,7 +90,7 @@ export default {
 
       const updated_user = await User.findByIdAndUpdate(id, update_data, {
         new: true,
-      });
+      }).populate('role_ids');
       if (!updated_user) throw new GraphQLError('User not found');
 
       // Password change or deactivation kills existing sessions
@@ -118,7 +124,7 @@ export default {
     login: async (_: any, { input }: any, context: ApolloContext) => {
       const { email, password } = input;
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email }).populate('role_ids');
       if (!user || !user.is_active) throw invalid_credentials();
 
       const is_match = await bcrypt.compare(password, user.password);
@@ -136,7 +142,7 @@ export default {
         });
       }
 
-      const user = await User.findById(user_id);
+      const user = await User.findById(user_id).populate('role_ids');
       if (!user || !user.is_active) {
         throw new GraphQLError('Invalid refresh token', {
           extensions: { code: 'UNAUTHENTICATED' },
@@ -170,10 +176,50 @@ export default {
 
       return true;
     },
+
+    addUserRole: async (_: any, { user_id, role_id }: any, context: ApolloContext) => {
+      require_permission(context, 'users.update');
+
+      const role = await Role.findById(role_id);
+      if (!role) {
+        throw new GraphQLError('Role not found', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const user = await User.findById(user_id);
+      if (!user) throw new GraphQLError('User not found');
+
+      if (!user.role_ids.includes(role_id)) {
+        user.role_ids.push(role_id);
+        await user.save();
+      }
+
+      return await user.populate('role_ids');
+    },
+
+    removeUserRole: async (_: any, { user_id, role_id }: any, context: ApolloContext) => {
+      require_permission(context, 'users.update');
+
+      const user = await User.findById(user_id);
+      if (!user) throw new GraphQLError('User not found');
+
+      if (user.role_ids.length === 1) {
+        throw new GraphQLError('User must have at least one role', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      user.role_ids = user.role_ids.filter((id: any) => !id.equals(role_id));
+      await user.save();
+
+      return await user.populate('role_ids');
+    },
   },
   User: {
-    role: async (parent: any) => {
-      return await Role.findById(parent.role_id);
+    roles: async (parent: any) => {
+      if (!parent.role_ids || parent.role_ids.length === 0) return [];
+      return await Role.find({ _id: { $in: parent.role_ids } });
     },
   },
 };

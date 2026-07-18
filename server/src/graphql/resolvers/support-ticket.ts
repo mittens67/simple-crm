@@ -39,16 +39,18 @@ export default {
         });
       }
 
-      const agent_exists = await User.findById(assigned_agent);
-      if (!agent_exists) {
-        throw new GraphQLError('Assigned agent not found', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
+      if (assigned_agent) {
+        const agent_exists = await User.findById(assigned_agent);
+        if (!agent_exists) {
+          throw new GraphQLError('Assigned agent not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
       }
 
       const ticket = new SupportTicket({
         customer_id: new Types.ObjectId(customer_id),
-        assigned_agent: new Types.ObjectId(assigned_agent),
+        ...(assigned_agent && { assigned_agent: new Types.ObjectId(assigned_agent) }),
         issue_summary,
         status,
         internal_notes,
@@ -64,6 +66,16 @@ export default {
       const ticket = await SupportTicket.findById(id);
       if (!ticket) {
         throw new GraphQLError('Support ticket not found');
+      }
+
+      if (input.assigned_agent) {
+        const agent_exists = await User.findById(input.assigned_agent);
+        if (!agent_exists) {
+          throw new GraphQLError('Assigned agent not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
+        ticket.assigned_agent = new Types.ObjectId(input.assigned_agent);
       }
 
       if (input.status) ticket.status = input.status;

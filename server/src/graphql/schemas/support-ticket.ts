@@ -11,7 +11,7 @@ export default gql`
   type SupportTicket {
     id: ID!
     customer: Customer!
-    assigned_agent: User!
+    assigned_agent: User
     status: SupportStatus!
     issue_summary: String!
     internal_notes: String
@@ -21,7 +21,7 @@ export default gql`
 
   input CreateSupportTicketInput {
     customer_id: ID!
-    assigned_agent: ID!
+    assigned_agent: ID
     issue_summary: String!
     status: SupportStatus
     internal_notes: String
@@ -30,6 +30,7 @@ export default gql`
   input UpdateSupportTicketInput {
     status: SupportStatus
     internal_notes: String
+    assigned_agent: ID
   }
 
   type Query {

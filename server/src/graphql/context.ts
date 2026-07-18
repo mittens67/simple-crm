@@ -23,9 +23,12 @@ export const context = async ({
   if (token) {
     try {
       const payload = verify_access_token(token);
-      const user = await User.findById(payload.sub);
+      const user = await User.findById(payload.sub).populate('role_ids');
       if (user && user.is_active) {
-        const role = await Role.findById(user.role_id);
+        // Use the first role for permission checks; client will implement role switching
+        const role = (user.role_ids && user.role_ids.length > 0)
+          ? (user.role_ids[0] as any)
+          : null;
         return { user, role, req, res };
       }
     } catch {

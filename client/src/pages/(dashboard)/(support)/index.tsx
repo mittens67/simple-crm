@@ -18,7 +18,7 @@ interface SupportTicket {
     id: string;
     name: string;
   };
-  assigned_agent: {
+  assigned_agent?: {
     id: string;
     name: string;
   };
@@ -53,6 +53,10 @@ const Support = () => {
     onCompleted: () => {
       refetch_tickets();
       set_modal_open(false);
+    },
+    onError: (error) => {
+      console.error('Create ticket error:', error.message);
+      alert(`Error creating ticket: ${error.message}`);
     },
   });
 
@@ -146,7 +150,7 @@ const Support = () => {
             <tr key={ticket.id}>
               <td>{ticket.issue_summary}</td>
               <td>{ticket.customer.name}</td>
-              <td>{ticket.assigned_agent.name}</td>
+              <td>{ticket.assigned_agent?.name || 'Unassigned'}</td>
               <td>
                 <span className={`status status-${ticket.status.toLowerCase()}`}>
                   {ticket.status}

@@ -8,6 +8,8 @@ import Leads from "../pages/(dashboard)/(sales)/(leads)";
 import Customers from "../pages/(dashboard)/(sales)/(customers)";
 import Deals from "../pages/(dashboard)/(sales)/(deals)";
 import Support from "../pages/(dashboard)/(support)";
+import Roles from "../pages/(dashboard)/(admin)/roles";
+import Users from "../pages/(dashboard)/(admin)/users";
 
 const Navigation = () => {
   return (
@@ -28,6 +30,8 @@ const Navigation = () => {
           <Route path="deals" element={<Deals />} />
           <Route path="support" element={<Support />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="admin/roles" element={<Roles />} />
+          <Route path="admin/users" element={<Users />} />
         </Route>
       </Routes>
     </Router>

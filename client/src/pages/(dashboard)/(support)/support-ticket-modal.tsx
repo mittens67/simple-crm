@@ -6,7 +6,7 @@ interface SupportTicket {
     id: string;
     name: string;
   };
-  assigned_agent: {
+  assigned_agent?: {
     id: string;
     name: string;
   };
@@ -52,7 +52,7 @@ const SupportTicketModal = ({
     if (ticket) {
       set_form_data({
         customer_id: ticket.customer.id,
-        assigned_agent: ticket.assigned_agent.id,
+        assigned_agent: ticket.assigned_agent?.id || '',
         issue_summary: ticket.issue_summary,
         status: ticket.status,
         internal_notes: ticket.internal_notes || '',
@@ -71,12 +71,13 @@ const SupportTicketModal = ({
     if (ticket) {
       const partial_input: any = {};
       if (form_data.status) partial_input.status = form_data.status;
-      if (form_data.internal_notes) partial_input.internal_notes = form_data.internal_notes;
+      if (form_data.internal_notes !== undefined) partial_input.internal_notes = form_data.internal_notes;
+      if (form_data.assigned_agent !== undefined) partial_input.assigned_agent = form_data.assigned_agent || null;
       on_save(partial_input);
     } else {
       on_save({
         customer_id: form_data.customer_id,
-        assigned_agent: form_data.assigned_agent,
+        assigned_agent: form_data.assigned_agent || null,
         issue_summary: form_data.issue_summary,
         status: form_data.status,
         internal_notes: form_data.internal_notes,
@@ -115,23 +116,6 @@ const SupportTicketModal = ({
               </div>
 
               <div className="form-group">
-                <label>Assigned Agent *</label>
-                <select
-                  name="assigned_agent"
-                  value={form_data.assigned_agent}
-                  onChange={handle_change}
-                  required
-                >
-                  <option value="">Select an agent</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
                 <label>Issue Summary *</label>
                 <input
                   type="text"
@@ -143,6 +127,22 @@ const SupportTicketModal = ({
               </div>
             </>
           )}
+
+          <div className="form-group">
+            <label>Assigned Agent</label>
+            <select
+              name="assigned_agent"
+              value={form_data.assigned_agent}
+              onChange={handle_change}
+            >
+              <option value="">Unassigned</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="form-group">
             <label>Status</label>

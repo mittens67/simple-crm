@@ -33,14 +33,23 @@ export default {
         });
       }
 
-      const owner = await User.findById(owner_id);
-      if (!owner) {
-        throw new GraphQLError('Deal owner not found', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
+      if (owner_id) {
+        const owner = await User.findById(owner_id);
+        if (!owner) {
+          throw new GraphQLError('Deal owner not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
       }
 
-      const deal = new Deal({ title, customer_id, owner_id, value, status, stage });
+      const deal = new Deal({
+        title,
+        customer_id,
+        ...(owner_id && { owner_id }),
+        value,
+        status,
+        stage,
+      });
       await deal.save();
       return deal;
     },

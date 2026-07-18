@@ -21,14 +21,21 @@ export default {
       require_permission(context, 'customers.create');
       const { name, email, phone, assigned_rep_id } = input;
 
-      const rep = await User.findById(assigned_rep_id);
-      if (!rep) {
-        throw new GraphQLError('Assigned sales rep not found', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
+      if (assigned_rep_id) {
+        const rep = await User.findById(assigned_rep_id);
+        if (!rep) {
+          throw new GraphQLError('Assigned sales rep not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
       }
 
-      const customer = new Customer({ name, email, phone, assigned_rep_id });
+      const customer = new Customer({
+        name,
+        email,
+        phone,
+        ...(assigned_rep_id && { assigned_rep_id })
+      });
       await customer.save();
       return customer;
     },

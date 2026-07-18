@@ -16,6 +16,7 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
   {
     name: 'Sales',
     permissions: {
+      'users.read': true,
       'leads.*': true,
       'customers.*': true,
       'deals.*': true,
@@ -25,6 +26,7 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
   {
     name: 'Support',
     permissions: {
+      'users.read': true,
       'support_tickets.*': true,
       'support_notes.*': true,
       'customers.read': true,
@@ -62,7 +64,7 @@ const seed = async () => {
       name: 'Admin',
       email: admin_email,
       password: await bcrypt.hash(admin_password, 10),
-      role_id: admin_role!._id,
+      role_ids: [admin_role!._id],
       is_active: true,
     });
     console.log(`Created admin user ${admin_email}`);

@@ -50,6 +50,52 @@
     }
   }
 
+  &-role-switcher {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 1.5rem;
+  }
+
+  &-role-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  &-role-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #22c55e;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    option {
+      background: #1a1a1a;
+      color: white;
+    }
+  }
+
   &-nav {
     display: flex;
     flex-direction: column;
@@ -60,24 +106,35 @@
       text-decoration: none;
       color: rgba(255, 255, 255, 0.7);
       transition: all 0.2s ease-in-out;
-      padding: 0.75rem 1rem;
-      border-left: 3px solid transparent;
+      padding: 0.5rem 1rem;
+      position: relative;
+      display: flex;
+      align-items: center;
 
       > p {
         margin: 0;
         font-weight: 500;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
       }
 
       &:hover {
         color: rgba(255, 255, 255, 0.95);
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.06);
       }
 
       &.active {
         color: white;
-        background: rgba(255, 255, 255, 0.1);
-        border-left-color: #22c55e;
+        background: rgba(34, 197, 94, 0.15);
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: #22c55e;
+        }
       }
     }
   }
@@ -94,8 +151,10 @@
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  margin: 0 1rem;
+  margin: auto 1rem 1rem 1rem;
   border-radius: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1rem;
 
   &:hover {
     background: rgba(239, 68, 68, 0.15);

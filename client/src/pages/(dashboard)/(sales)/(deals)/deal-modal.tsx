@@ -7,7 +7,7 @@ interface Deal {
     id: string;
     name: string;
   };
-  owner: {
+  owner?: {
     id: string;
     name: string;
   };
@@ -49,7 +49,7 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
       set_form_data({
         title: deal.title,
         customer_id: deal.customer.id,
-        owner_id: deal.owner.id,
+        owner_id: deal.owner?.id || '',
         value: String(deal.value),
         status: deal.status,
         stage: deal.stage,
@@ -67,7 +67,7 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
     const input = {
       title: form_data.title,
       customer_id: form_data.customer_id,
-      owner_id: form_data.owner_id,
+      ...(form_data.owner_id && { owner_id: form_data.owner_id }),
       value: parseFloat(form_data.value),
       status: form_data.status,
       stage: form_data.stage,
@@ -127,14 +127,13 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
           </div>
 
           <div className="form-group">
-            <label>Owner *</label>
+            <label>Owner</label>
             <select
               name="owner_id"
               value={form_data.owner_id}
               onChange={handle_change}
-              required
             >
-              <option value="">Select an owner</option>
+              <option value="">Unassigned</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
