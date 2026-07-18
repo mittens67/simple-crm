@@ -1,13 +1,20 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/auth-context";
+import Logo from "./logo";
 import "./side-bar.scss";
 
 const SideBar = () => {
   const { user, logout, current_role_index, switch_role } = useAuth();
   const navigate = useNavigate();
 
-  const profile_img =
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQF3LlStxpRcxoEoLrSNbDylvHbFQpNo7iuqg&s";
+  const get_initials = (name: string) => {
+    return name
+      .split(' ')
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
+  };
 
   const handle_logout = async () => {
     await logout();
@@ -16,15 +23,13 @@ const SideBar = () => {
 
   return (
     <div className="sidebar">
+      <div className="sidebar-logo">
+        <Logo size="medium" />
+      </div>
       <div className="sidebar-profile">
         <div className="sidebar-profile-img">
-          <Link to="/profile">
-            <img
-              src={profile_img}
-              alt="profile image"
-              width={72}
-              height={72}
-            />
+          <Link to="/profile" className="sidebar-avatar">
+            <span className="avatar-initials">{user && get_initials(user.name)}</span>
           </Link>
         </div>
         <div className="sidebar-profile-card">
