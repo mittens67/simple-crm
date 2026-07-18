@@ -1,49 +1,49 @@
-import SupportTicket from "../../models/SupportTicket";
-import Customer from "../../models/Customer";
-import User from "../../models/User";
-import { Types } from "mongoose";
+import { GraphQLError } from 'graphql';
+import SupportTicket from '../../models/support-ticket';
+import Customer from '../../models/customer';
+import User from '../../models/user';
+import { Types } from 'mongoose';
 import { ApolloContext } from '../context';
+import { require_permission } from '../../auth/authorize';
 
 export default {
   Query: {
     supportTickets: async (_: any, __: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_tickets.read');
       return await SupportTicket.find()
-        .populate("customer_id")
-        .populate("assigned_agent");
+        .populate('customer_id')
+        .populate('assigned_agent');
     },
     supportTicket: async (_: any, { id }: { id: string }, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_tickets.read');
       return await SupportTicket.findById(id)
-        .populate("customer_id")
-        .populate("assigned_agent");
+        .populate('customer_id')
+        .populate('assigned_agent');
     },
   },
   Mutation: {
     createSupportTicket: async (_: any, { input }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_tickets.create');
       const {
         customer_id,
         assigned_agent,
         issue_summary,
-        status = "Open",
+        status = 'Open',
         internal_notes,
       } = input;
 
-      const customerExists = await Customer.findById(customer_id);
-      if (!customerExists) {
-        throw new Error("Customer not found");
+      const customer_exists = await Customer.findById(customer_id);
+      if (!customer_exists) {
+        throw new GraphQLError('Customer not found', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
       }
 
-      const agentExists = await User.findById(assigned_agent);
-      if (!agentExists) {
-        throw new Error("Assigned agent not found");
+      const agent_exists = await User.findById(assigned_agent);
+      if (!agent_exists) {
+        throw new GraphQLError('Assigned agent not found', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
       }
 
       const ticket = new SupportTicket({
@@ -59,12 +59,11 @@ export default {
     },
 
     updateSupportTicket: async (_: any, { id, input }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_tickets.update');
+
       const ticket = await SupportTicket.findById(id);
       if (!ticket) {
-        throw new Error("Support ticket not found");
+        throw new GraphQLError('Support ticket not found');
       }
 
       if (input.status) ticket.status = input.status;
@@ -74,21 +73,18 @@ export default {
       await ticket.save();
       return ticket;
     },
+
     deleteSupportTicket: async (_: any, { id }: { id: string }, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_tickets.delete');
       const deleted = await SupportTicket.findByIdAndDelete(id);
       if (!deleted) {
-        throw new Error("Support ticket not found or already deleted");
+        throw new GraphQLError('Support ticket not found or already deleted');
       }
       return true;
     },
   },
   SupportTicket: {
-    customer: async (ticket: any) =>
-      await Customer.findById(ticket.customer_id),
-    assigned_agent: async (ticket: any) =>
-      await User.findById(ticket.assigned_agent),
+    customer: async (ticket: any) => await Customer.findById(ticket.customer_id),
+    assigned_agent: async (ticket: any) => await User.findById(ticket.assigned_agent),
   },
 };

@@ -1,12 +1,28 @@
 .dashboard {
-    padding: 2rem;
-    display: flex;
+  display: flex;
+  height: 100vh;
 
-    &-window {
-        flex: 1;
-        height: calc(100vh - 4rem);
-        overflow: auto;
-        scrollbar-width: none;
-        border-radius: 2rem;
+  &-window {
+    flex: 1;
+    height: 100vh;
+    overflow: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      width: 8px;
     }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+
+      &:hover {
+        background: #999;
+      }
+    }
+  }
 }

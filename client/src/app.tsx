@@ -1,5 +1,5 @@
 import 'react';
-import './App.scss'
+import './app.scss'
 import Navigation from './navigation';
 
 function App() {

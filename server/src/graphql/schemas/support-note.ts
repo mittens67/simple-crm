@@ -11,7 +11,6 @@ export default gql`
 
   input CreateSupportNoteInput {
     customer_id: ID!
-    author_id: ID!
     content: String!
   }
 

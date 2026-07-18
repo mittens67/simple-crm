@@ -1,4 +1,4 @@
-// models/SupportNote.ts
+// models/support-note.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ISupportNote extends Document {

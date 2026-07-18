@@ -12,7 +12,7 @@ export default gql`
   }
 
   type AuthPayload {
-    token: String!
+    accessToken: String!
     user: User!
   }
 
@@ -34,11 +34,10 @@ export default gql`
   input LoginInput {
     email: String!
     password: String!
-    role: String!
   }
 
-  input ResetPasswordInput {
-    email: String!
+  input ChangePasswordInput {
+    oldPassword: String!
     newPassword: String!
   }
 
@@ -47,10 +46,10 @@ export default gql`
     updateUser(id: ID!, input: UpdateUserInput!): User!
     deleteUser(id: ID!): Boolean!
 
-    signup(input: CreateUserInput!): User!
     login(input: LoginInput!): AuthPayload!
+    refreshToken: AuthPayload!
     logout: Boolean!
-    resetPassword(input: ResetPasswordInput!): Boolean!
+    changePassword(input: ChangePasswordInput!): Boolean!
   }
 
   type Query {

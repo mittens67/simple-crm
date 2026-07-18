@@ -27,6 +27,7 @@ export default gql`
   type Query {
     roles: [Role!]!
     role(id: ID!): Role
+    permissionCatalog: [String!]!
   }
 
   type Mutation {

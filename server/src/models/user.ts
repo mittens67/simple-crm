@@ -15,7 +15,7 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // You’ll hash this
     name: { type: String, required: true },
-    role_id: { type: Schema.Types.ObjectId, ref: 'role_id', required: true },
+    role_id: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
     is_active: { type: Boolean, default: true },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }

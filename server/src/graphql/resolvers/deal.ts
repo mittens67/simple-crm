@@ -1,71 +1,72 @@
-import Deal from '../../models/Deal';
-import User from '../../models/User';
-import Customer from '../../models/Customer';
+import { GraphQLError } from 'graphql';
+import Deal from '../../models/deal';
+import User from '../../models/user';
+import Customer from '../../models/customer';
 import { ApolloContext } from '../context';
+import { require_permission } from '../../auth/authorize';
 
 export default {
   Query: {
     deals: async (_: any, __: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Sales')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'deals.read');
       return await Deal.find().populate('customer_id').populate('owner_id');
     },
     deal: async (_: any, { id }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Sales')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'deals.read');
       return await Deal.findById(id).populate('customer_id').populate('owner_id');
     },
     dealsByOwner: async (_: any, { owner_id }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Sales')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'deals.read');
       return await Deal.find({ owner_id }).populate('customer_id').populate('owner_id');
     },
   },
 
   Mutation: {
     createDeal: async (_: any, { input }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Sales')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'deals.create');
       const { title, customer_id, owner_id, value, status = 'Open', stage } = input;
 
       const customer = await Customer.findById(customer_id);
-      if (!customer) throw new Error('Customer not found');
+      if (!customer) {
+        throw new GraphQLError('Customer not found', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
 
       const owner = await User.findById(owner_id);
-      if (!owner) throw new Error('Deal owner not found');
+      if (!owner) {
+        throw new GraphQLError('Deal owner not found', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
 
-      const deal = new Deal({
-        title,
-        customer_id,
-        owner_id,
-        value,
-        status,
-        stage,
-      });
-
+      const deal = new Deal({ title, customer_id, owner_id, value, status, stage });
       await deal.save();
       return deal;
     },
 
     updateDeal: async (_: any, { id, input }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Sales')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'deals.update');
+
       const deal = await Deal.findById(id);
-      if (!deal) throw new Error('Deal not found');
+      if (!deal) throw new GraphQLError('Deal not found');
 
       if (input.customer_id) {
         const customer = await Customer.findById(input.customer_id);
-        if (!customer) throw new Error('Customer not found');
+        if (!customer) {
+          throw new GraphQLError('Customer not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
       }
 
       if (input.owner_id) {
         const owner = await User.findById(input.owner_id);
-        if (!owner) throw new Error('Owner not found');
+        if (!owner) {
+          throw new GraphQLError('Owner not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
       }
 
       Object.assign(deal, input);
@@ -74,9 +75,7 @@ export default {
     },
 
     deleteDeal: async (_: any, { id }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Sales')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'deals.delete');
       const result = await Deal.findByIdAndDelete(id);
       return !!result;
     },

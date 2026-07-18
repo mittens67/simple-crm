@@ -1,64 +1,58 @@
-import SupportNote from "../../models/SupportNote";
-import Customer from "../../models/Customer";
-import User from "../../models/User";
-import { Types } from "mongoose";
+import { GraphQLError } from 'graphql';
+import SupportNote from '../../models/support-note';
+import Customer from '../../models/customer';
+import User from '../../models/user';
+import { Types } from 'mongoose';
 import { ApolloContext } from '../context';
+import { require_permission } from '../../auth/authorize';
 
 export default {
   Query: {
     supportNotes: async (_: any, { customer_id }: { customer_id: string }, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_notes.read');
       return await SupportNote.find({
         customer_id: new Types.ObjectId(customer_id),
       })
         .sort({ created_at: -1 })
-        .populate("customer_id")
-        .populate("author_id");
+        .populate('customer_id')
+        .populate('author_id');
     },
     supportNote: async (_: any, { id }: { id: string }, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_notes.read');
       return await SupportNote.findById(id)
-        .populate("customer_id")
-        .populate("author_id");
+        .populate('customer_id')
+        .populate('author_id');
     },
   },
 
   Mutation: {
     createSupportNote: async (_: any, { input }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
-      const { customer_id, author_id, content } = input;
+      const actor = require_permission(context, 'support_notes.create');
+      const { customer_id, content } = input;
 
       const customer = await Customer.findById(customer_id);
       if (!customer) {
-        throw new Error("Customer not found");
+        throw new GraphQLError('Customer not found', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
       }
 
-      const author = await User.findById(author_id);
-      if (!author) {
-        throw new Error("Author (support agent) not found");
-      }
-
+      // Notes are always authored by the logged-in user
       const note = new SupportNote({
         customer_id: new Types.ObjectId(customer_id),
-        author_id: new Types.ObjectId(author_id),
+        author_id: actor._id,
         content,
       });
 
       await note.save();
       return note;
     },
+
     updateSupportNote: async (_: any, { id, input }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_notes.update');
+
       const note = await SupportNote.findById(id);
-      if (!note) throw new Error("Support note not found");
+      if (!note) throw new GraphQLError('Support note not found');
 
       note.content = input.content;
       await note.save();
@@ -66,12 +60,11 @@ export default {
     },
 
     deleteSupportNote: async (_: any, { id }: any, context: ApolloContext) => {
-      if (!context.user || !context.role || (context.role.name !== 'Admin' && context.role.name !== 'Support')) {
-        throw new Error('Unauthorized: You are not authorized to perform this action.');
-      }
+      require_permission(context, 'support_notes.delete');
       const deleted = await SupportNote.findByIdAndDelete(id);
-      if (!deleted)
-        throw new Error("Support note not found or already deleted");
+      if (!deleted) {
+        throw new GraphQLError('Support note not found or already deleted');
+      }
       return true;
     },
   },

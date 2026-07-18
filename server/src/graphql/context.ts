@@ -1,31 +1,37 @@
-import jwt from 'jsonwebtoken';
-import User, {IUser} from '../models/User'; 
-import Role, { IRole } from '../models/Role';
-import { Request } from 'express';
-
-const SECRET_KEY = process.env.JWT_SECRET || 'yoursecret';
+import { Request, Response } from 'express';
+import User, { IUser } from '../models/user';
+import Role, { IRole } from '../models/role';
+import { verify_access_token } from '../auth/tokens';
 
 export interface ApolloContext {
-    user?: IUser | null; 
-    role?: IRole | null;
+  user?: IUser | null;
+  role?: IRole | null;
+  req: Request;
+  res: Response;
 }
 
-export const context = async ({ req }: { req: Request }): Promise<ApolloContext> => {
+export const context = async ({
+  req,
+  res,
+}: {
+  req: Request;
+  res: Response;
+}): Promise<ApolloContext> => {
   const auth = req.headers.authorization || '';
-  const token = auth.replace('Bearer ', '');
+  const token = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : '';
 
   if (token) {
     try {
-      const payload: any = jwt.verify(token, SECRET_KEY);
-      const user = await User.findById(payload.id);
-      if (!user) return {};
-
-      const role = await Role.findById(user.role_id);
-      return { user, role };
-    } catch (err) {
-      console.error('Auth error:', err);
+      const payload = verify_access_token(token);
+      const user = await User.findById(payload.sub);
+      if (user && user.is_active) {
+        const role = await Role.findById(user.role_id);
+        return { user, role, req, res };
+      }
+    } catch {
+      // Invalid/expired token — treat as unauthenticated; resolvers decide access.
     }
   }
 
-  return {};
+  return { req, res };
 };

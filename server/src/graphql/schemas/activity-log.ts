@@ -10,7 +10,6 @@ export default gql`
   }
 
   input LogActivityInput {
-    user_id: ID!
     action: String!
     metadata: JSON
   }

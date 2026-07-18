@@ -1,49 +1,44 @@
+import 'dotenv/config';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
+import cors from 'cors';
+import { env } from './config/env';
 import { context, ApolloContext } from './graphql/context';
 import { typeDefs } from './graphql/typedefs';
 import { resolvers } from './graphql/resolvers';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import { connectDB } from './config/db';
+import { connect_db } from './config/db';
 
-
-dotenv.config();
-
-const startServer = async () => {
+const start_server = async () => {
   const app = express();
 
-  // Create Apollo Server instance
   const server = new ApolloServer<ApolloContext>({
     typeDefs,
     resolvers,
   });
 
-  // Start Apollo Server
   await server.start();
 
-  // Use JSON parsing middleware from Express
-  app.use(express.json()); // This replaces bodyParser.json()
+  app.use(express.json());
+  app.use(cookieParser());
 
-  // Enable CORS and use Apollo middleware for GraphQL endpoint
   app.use(
     '/graphql',
-    cors<cors.CorsRequest>(), // Enables cross-origin requests
+    cors<cors.CorsRequest>({
+      origin: true,
+      credentials: true,
+    }),
     expressMiddleware(server, {
       context,
-    })  // Connects Apollo to Express
+    })
   );
 
-  const PORT = process.env.PORT || 4000;
+  await connect_db(env.MONGO_URI);
 
-  // Connect to MongoDB
-  await connectDB(process.env.MONGO_URI as string);
-
-  // Start the server
-  app.listen(PORT, () => {
-    console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+  app.listen(env.PORT, () => {
+    console.log(`🚀 Server ready at http://localhost:${env.PORT}/graphql`);
   });
 };
 
-startServer();
+start_server();
