@@ -322,6 +322,7 @@ This creates:
 - **Apollo Client** — GraphQL client with `InMemoryCache` for intelligent query result caching
 - **SCSS** — Powerful stylesheet language with nesting, mixins, variables for maintainable CSS
 - **React Router v7** — Modern client-side routing with protected route middleware
+- **Light/Dark Mode Theme System** — CSS variables-based theming with React Context, persisted to MongoDB user preferences; toggle available in profile page
 
 **State Management Pattern:**
 - Apollo Client handles all remote data (GraphQL queries, mutations, caching)
@@ -333,6 +334,7 @@ This creates:
 - **Auto-retry with silent session refresh** — Apollo error link detects auth failures and automatically calls `refreshToken`, then retries the failed operation (seamless UX even after token expiration)
 - **Permission-based UI rendering** — `useCan(permission)` hook mirrors server permission logic, preventing users from seeing UI they can't use
 - **Auth context with useCallback memoization** — login/logout/role-switch functions are stable references, preventing unnecessary re-renders in child components
+- **CSS Variables Theming** — Light/dark mode implemented via CSS custom properties (`--bg-primary`, `--text-primary`, etc.) in `theme-variables.scss`, with theme preference persisted to user MongoDB document; theme toggle in profile page with real-time sync across all pages
 
 ### 📡 Backend Stack
 - **Node.js + Express** — Lightweight HTTP server
