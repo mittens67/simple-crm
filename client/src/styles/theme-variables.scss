@@ -1,0 +1,226 @@
+// Theme CSS Variables - Light and Dark modes
+
+// Light Mode (default)
+:root[data-theme='light'] {
+  // Primary colors
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #eeeeee;
+
+  // Text colors
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+
+  // Borders
+  --border-color: #e0e0e0;
+  --border-color-light: #f0f0f0;
+
+  // Glass/Glassmorphism
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-bg-hover: rgba(0, 0, 0, 0.06);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-hover: rgba(0, 0, 0, 0.12);
+
+  // Form elements
+  --input-bg: #ffffff;
+  --input-border: #d0d0d0;
+  --input-focus-border: #999999;
+  --input-text: #000000;
+  --input-placeholder: #999999;
+
+  // Sidebar
+  --sidebar-bg: #f8f8f8;
+  --sidebar-text: #000000;
+  --sidebar-text-secondary: #666666;
+  --sidebar-border: #e0e0e0;
+  --sidebar-nav-hover: rgba(0, 0, 0, 0.05);
+
+  // Modal
+  --modal-bg: #ffffff;
+  --modal-border: #e0e0e0;
+  --modal-overlay: rgba(0, 0, 0, 0.3);
+
+  // Table
+  --table-bg: #ffffff;
+  --table-border: #e0e0e0;
+  --table-header-bg: #f9f9f9;
+  --table-row-hover: #f5f5f5;
+
+  // Status badges
+  --status-open: #e3f2fd;
+  --status-open-text: #1976d2;
+  --status-pending: #fff3e0;
+  --status-pending-text: #f57c00;
+  --status-archived: #eeeeee;
+  --status-archived-text: #616161;
+  --status-converted: #e8f5e9;
+  --status-converted-text: #2e7d32;
+
+  // Accents (same for both themes)
+  --accent-success: #22c55e;
+  --accent-success-hover: #16a34a;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-error-hover: #dc2626;
+  --accent-info: #3b82f6;
+  --accent-info-hover: #2563eb;
+
+  // Scrollbar
+  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #cccccc;
+  --scrollbar-thumb-hover: #999999;
+
+  // Transitions
+  --transition-speed: 0.2s;
+}
+
+// Dark Mode
+:root[data-theme='dark'] {
+  // Primary colors
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #252525;
+
+  // Text colors
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  // Borders
+  --border-color: rgba(255, 255, 255, 0.15);
+  --border-color-light: rgba(255, 255, 255, 0.08);
+
+  // Glass/Glassmorphism
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-hover: rgba(255, 255, 255, 0.25);
+
+  // Form elements
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.2);
+  --input-focus-border: rgba(255, 255, 255, 0.4);
+  --input-text: #ffffff;
+  --input-placeholder: rgba(255, 255, 255, 0.5);
+
+  // Sidebar
+  --sidebar-bg: rgba(0, 0, 0, 0.6);
+  --sidebar-text: #ffffff;
+  --sidebar-text-secondary: rgba(255, 255, 255, 0.6);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-nav-hover: rgba(255, 255, 255, 0.06);
+
+  // Modal
+  --modal-bg: rgba(30, 30, 30, 0.95);
+  --modal-border: rgba(255, 255, 255, 0.15);
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+
+  // Table
+  --table-bg: rgba(255, 255, 255, 0.08);
+  --table-border: rgba(255, 255, 255, 0.15);
+  --table-header-bg: rgba(255, 255, 255, 0.1);
+  --table-row-hover: rgba(255, 255, 255, 0.05);
+
+  // Status badges (adjusted for dark theme)
+  --status-open: #e3f2fd;
+  --status-open-text: #1976d2;
+  --status-pending: #fff3e0;
+  --status-pending-text: #f57c00;
+  --status-archived: #eeeeee;
+  --status-archived-text: #616161;
+  --status-converted: #e8f5e9;
+  --status-converted-text: #2e7d32;
+
+  // Accents (same for both themes)
+  --accent-success: #22c55e;
+  --accent-success-hover: #16a34a;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-error-hover: #dc2626;
+  --accent-info: #3b82f6;
+  --accent-info-hover: #2563eb;
+
+  // Scrollbar
+  --scrollbar-track: #1a1a1a;
+  --scrollbar-thumb: #404040;
+  --scrollbar-thumb-hover: #606060;
+
+  // Transitions
+  --transition-speed: 0.2s;
+}
+
+// Default to light mode if data-theme not set
+:root {
+  // Primary colors
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #eeeeee;
+
+  // Text colors
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+
+  // Borders
+  --border-color: #e0e0e0;
+  --border-color-light: #f0f0f0;
+
+  // Glass/Glassmorphism
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-bg-hover: rgba(0, 0, 0, 0.06);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-hover: rgba(0, 0, 0, 0.12);
+
+  // Form elements
+  --input-bg: #ffffff;
+  --input-border: #d0d0d0;
+  --input-focus-border: #999999;
+  --input-text: #000000;
+  --input-placeholder: #999999;
+
+  // Sidebar
+  --sidebar-bg: #f8f8f8;
+  --sidebar-text: #000000;
+  --sidebar-text-secondary: #666666;
+  --sidebar-border: #e0e0e0;
+  --sidebar-nav-hover: rgba(0, 0, 0, 0.05);
+
+  // Modal
+  --modal-bg: #ffffff;
+  --modal-border: #e0e0e0;
+  --modal-overlay: rgba(0, 0, 0, 0.3);
+
+  // Table
+  --table-bg: #ffffff;
+  --table-border: #e0e0e0;
+  --table-header-bg: #f9f9f9;
+  --table-row-hover: #f5f5f5;
+
+  // Status badges
+  --status-open: #e3f2fd;
+  --status-open-text: #1976d2;
+  --status-pending: #fff3e0;
+  --status-pending-text: #f57c00;
+  --status-archived: #eeeeee;
+  --status-archived-text: #616161;
+  --status-converted: #e8f5e9;
+  --status-converted-text: #2e7d32;
+
+  // Accents (same for both themes)
+  --accent-success: #22c55e;
+  --accent-success-hover: #16a34a;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-error-hover: #dc2626;
+  --accent-info: #3b82f6;
+  --accent-info-hover: #2563eb;
+
+  // Scrollbar
+  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #cccccc;
+  --scrollbar-thumb-hover: #999999;
+
+  // Transitions
+  --transition-speed: 0.2s;
+}

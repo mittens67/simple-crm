@@ -24,10 +24,20 @@ interface User {
   email: string;
 }
 
+export interface LeadInput {
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  assigned_rep_id?: string;
+  sales_notes?: string;
+  archive_notes?: string;
+}
+
 interface LeadModalProps {
   lead: Lead | null;
   users: User[];
-  on_save: (input: any) => void;
+  on_save: (input: LeadInput) => void;
   on_close: () => void;
 }
 
@@ -56,7 +66,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
     }
   }, [lead]);
 
-  const handle_change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handle_change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     set_form_data((prev) => ({ ...prev, [name]: value }));
   };
@@ -76,8 +86,6 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
     on_save(input);
   };
 
-  const is_terminal = lead && (lead.status === 'Archived' || lead.status === 'Converted');
-
   return (
     <div className="modal-overlay" onClick={on_close}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -96,8 +104,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="name"
               value={form_data.name}
               onChange={handle_change}
-              disabled={is_terminal}
-              required
+                            required
             />
           </div>
 
@@ -108,8 +115,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="email"
               value={form_data.email}
               onChange={handle_change}
-              disabled={is_terminal}
-              required
+                            required
             />
           </div>
 
@@ -120,14 +126,13 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="phone"
               value={form_data.phone}
               onChange={handle_change}
-              disabled={is_terminal}
-              required
+                            required
             />
           </div>
 
           <div className="form-group">
             <label>Status</label>
-            <select name="status" value={form_data.status} onChange={handle_change} disabled={is_terminal}>
+            <select name="status" value={form_data.status} onChange={handle_change}>
               <option>Open</option>
               <option>Pending</option>
               <option>Archived</option>
@@ -141,8 +146,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
               name="assigned_rep_id"
               value={form_data.assigned_rep_id}
               onChange={handle_change}
-              disabled={is_terminal}
-            >
+                          >
               <option value="">Unassigned</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
@@ -159,8 +163,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
                 name="sales_notes"
                 value={form_data.sales_notes}
                 onChange={handle_change}
-                disabled={is_terminal}
-                rows={3}
+                                rows={3}
                 placeholder="Track conversations, interests, objections..."
               />
             </div>
@@ -173,7 +176,6 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
                 name="archive_notes"
                 value={form_data.archive_notes}
                 onChange={handle_change}
-                disabled={is_terminal && form_data.status === 'Converted'}
                 rows={3}
                 placeholder="Reason for archiving or converting..."
               />
@@ -184,11 +186,9 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
             <button type="button" className="btn-secondary" onClick={on_close}>
               Close
             </button>
-            {!is_terminal && (
-              <button type="submit" className="btn-primary">
-                {lead ? 'Update' : 'Create'}
-              </button>
-            )}
+            <button type="submit" className="btn-primary">
+              {lead ? 'Update' : 'Create'}
+            </button>
           </div>
         </form>
       </div>

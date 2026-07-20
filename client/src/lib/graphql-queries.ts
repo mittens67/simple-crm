@@ -4,6 +4,7 @@ export const USER_FIELDS = `
   id
   name
   email
+  theme_preference
   role {
     id
     name
@@ -408,6 +409,18 @@ export const USERS_QUERY = gql`
       id
       name
       email
+    }
+  }
+`;
+
+// Theme
+export const UPDATE_THEME_MUTATION = gql`
+  mutation UpdateTheme($theme: String!) {
+    updateTheme(theme: $theme) {
+      id
+      name
+      email
+      theme_preference
     }
   }
 `;

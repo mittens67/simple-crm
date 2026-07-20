@@ -9,6 +9,8 @@ import {
   USERS_QUERY,
 } from '../../../../lib/graphql-queries';
 import LeadModal from './lead-modal';
+import LeadView from './lead-view';
+import type { LeadInput } from './lead-modal';
 import './leads.scss';
 
 interface Lead {
@@ -42,6 +44,7 @@ const Leads = () => {
   const { can } = useAuth();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<Lead | null>(null);
+  const [viewing, set_viewing] = useState<Lead | null>(null);
   const [search, set_search] = useState('');
 
   const { data: leads_data, loading: leads_loading, refetch: refetch_leads } = useQuery(LEADS_QUERY);
@@ -72,11 +75,11 @@ const Leads = () => {
     },
   });
 
-  const handle_create = async (input: any) => {
+  const handle_create = async (input: LeadInput) => {
     await create_lead({ variables: { input } });
   };
 
-  const handle_update = async (input: any) => {
+  const handle_update = async (input: LeadInput) => {
     if (!editing) return;
     await update_lead({ variables: { id: editing.id, input } });
   };
@@ -100,6 +103,7 @@ const Leads = () => {
   const handle_close_modal = () => {
     set_modal_open(false);
     set_editing(null);
+    set_viewing(null);
   };
 
   const leads = leads_data?.leads || [];
@@ -164,7 +168,7 @@ const Leads = () => {
                   </button>
                 )}
                 {can('leads.update') && (lead.status === 'Archived' || lead.status === 'Converted') && (
-                  <button className="btn-small" onClick={() => handle_open_edit(lead)}>
+                  <button className="btn-small" onClick={() => set_viewing(lead)}>
                     View
                   </button>
                 )}
@@ -178,6 +182,13 @@ const Leads = () => {
           ))}
         </tbody>
       </table>
+
+      {viewing && (
+        <LeadView
+          lead={viewing}
+          on_close={handle_close_modal}
+        />
+      )}
 
       {modal_open && (
         <LeadModal

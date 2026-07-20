@@ -1,5 +1,6 @@
 .app {
-    background-color: #101010;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     min-height: 100vh;
     font-size: 1.6rem;
 }

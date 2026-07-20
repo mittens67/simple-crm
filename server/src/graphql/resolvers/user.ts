@@ -215,6 +215,24 @@ export default {
 
       return await user.populate('role_ids');
     },
+
+    updateTheme: async (_: any, { theme }: { theme: string }, context: ApolloContext) => {
+      const user = require_auth(context);
+
+      if (!['light', 'dark'].includes(theme)) {
+        throw new GraphQLError('Invalid theme. Must be "light" or "dark"', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const updated_user = await User.findByIdAndUpdate(
+        user.id,
+        { theme_preference: theme },
+        { new: true }
+      );
+
+      return updated_user;
+    },
   },
   User: {
     roles: async (parent: any) => {

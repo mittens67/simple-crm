@@ -5,12 +5,15 @@ import './index.scss'
 import App from './app.tsx'
 import { apollo_client } from './lib/apollo'
 import { AuthProvider } from './auth/auth-context'
+import { ThemeProvider } from './theme/theme-provider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ApolloProvider client={apollo_client}>
       <AuthProvider>
-        <App />
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
       </AuthProvider>
     </ApolloProvider>
   </StrictMode>,

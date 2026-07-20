@@ -6,6 +6,7 @@ export interface IUser extends Document {
   name: string;
   role_ids: mongoose.Types.ObjectId[];
   is_active: boolean;
+  theme_preference: 'light' | 'dark';
   created_at: Date;
   updated_at: Date;
 }
@@ -17,6 +18,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true },
     role_ids: [{ type: Schema.Types.ObjectId, ref: 'Role' }],
     is_active: { type: Boolean, default: true },
+    theme_preference: { type: String, enum: ['light', 'dark'], default: 'light' },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
 );

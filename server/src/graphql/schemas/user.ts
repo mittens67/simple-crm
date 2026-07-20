@@ -7,6 +7,7 @@ export default gql`
     email: String!
     roles: [Role!]!
     is_active: Boolean!
+    theme_preference: String
     created_at: String
     updated_at: String
   }
@@ -66,6 +67,7 @@ export default gql`
     refreshToken: AuthPayload!
     logout: Boolean!
     changePassword(input: ChangePasswordInput!): Boolean!
+    updateTheme(theme: String!): User!
   }
 
   type Query {

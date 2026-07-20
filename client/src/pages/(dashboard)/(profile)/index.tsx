@@ -1,8 +1,10 @@
 import { useAuth } from '../../../auth/auth-context';
+import { useTheme } from '../../../theme/use-theme';
 import './profile.scss';
 
 const Profile = () => {
   const { user, current_role_index, switch_role, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   if (!user) {
     return <div className="profile">Loading...</div>;
@@ -95,6 +97,9 @@ const Profile = () => {
         <div className="profile-section">
           <h2>Account Actions</h2>
           <div className="actions-list">
+            <button className="btn-theme" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+              {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            </button>
             <button className="btn-logout" onClick={handle_logout}>
               🚪 Log Out
             </button>

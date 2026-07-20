@@ -71,8 +71,8 @@ const SideBar = () => {
         </NavLink>
         {(user?.roles.some((r) => r.name === 'Admin')) && (
           <>
-            <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1rem' }}>
-              <p style={{ margin: '0 1rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255, 255, 255, 0.4)' }}>
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--sidebar-border)', paddingTop: '1rem' }}>
+              <p style={{ margin: '0 1rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-tertiary)' }}>
                 Admin
               </p>
               <NavLink to="/admin/roles" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
