@@ -56,6 +56,20 @@ const Login = () => {
                 <span className="feature-text">Handle support tickets</span>
               </div>
             </div>
+
+            <div className="demo-credentials">
+              <h3>Demo Accounts</h3>
+              <div className="demo-account">
+                <div className="demo-label">Sales Rep</div>
+                <div className="demo-value">demo-sales@example.com</div>
+                <div className="demo-password">Demo123</div>
+              </div>
+              <div className="demo-account">
+                <div className="demo-label">Support Agent</div>
+                <div className="demo-value">demo-support@example.com</div>
+                <div className="demo-password">Demo123</div>
+              </div>
+            </div>
           </div>
         </div>
 

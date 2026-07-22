@@ -70,6 +70,39 @@ const seed = async () => {
     console.log(`Created admin user ${admin_email}`);
   }
 
+  // Demo accounts for external visitors
+  const demo_accounts = [
+    {
+      email: 'demo-sales@example.com',
+      password: 'Demo123',
+      name: 'Demo Sales Rep',
+      role: 'Sales',
+    },
+    {
+      email: 'demo-support@example.com',
+      password: 'Demo123',
+      name: 'Demo Support Agent',
+      role: 'Support',
+    },
+  ];
+
+  for (const demo of demo_accounts) {
+    const existing = await User.findOne({ email: demo.email });
+    if (existing) {
+      console.log(`Demo user ${demo.email} already exists — skipping`);
+    } else {
+      const role = await Role.findOne({ name: demo.role });
+      await User.create({
+        name: demo.name,
+        email: demo.email,
+        password: await bcrypt.hash(demo.password, 10),
+        role_ids: [role!._id],
+        is_active: true,
+      });
+      console.log(`Created demo user ${demo.email} with ${demo.role} role`);
+    }
+  }
+
   await mongoose.disconnect();
   console.log('Seed complete');
 };

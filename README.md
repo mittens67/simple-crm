@@ -287,7 +287,20 @@ pnpm seed
 This creates:
 - Admin user (from `.env` ADMIN_EMAIL & ADMIN_PASSWORD)
 - Admin, Sales, and Support roles with permissions
-- Sample data for testing
+- **Demo accounts for external visitors:**
+  - Sales Rep: `demo-sales@example.com` / `Demo123`
+  - Support Agent: `demo-support@example.com` / `Demo123`
+
+### Demo Accounts
+
+Pre-configured demo accounts are available for testing and demonstrations:
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Sales Rep** | demo-sales@example.com | Demo123 |
+| **Support Agent** | demo-support@example.com | Demo123 |
+
+Use these to explore the CRM's features without needing admin access. Demo credentials are displayed on the login screen for convenience.
 
 ---
 
