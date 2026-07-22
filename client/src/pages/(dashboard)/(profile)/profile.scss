@@ -160,10 +160,10 @@
 
     .permission-badge {
       padding: 0.5rem 0.75rem;
-      background: rgba(102, 126, 234, 0.2);
-      border: 1px solid rgba(102, 126, 234, 0.4);
+      background: var(--permission-badge-bg);
+      border: 1px solid var(--permission-badge-border);
       border-radius: 6px;
-      color: rgba(102, 234, 255, 1);
+      color: var(--permission-badge-text);
       font-size: 0.9rem;
       font-weight: 500;
       font-family: 'Courier New', monospace;
@@ -181,7 +181,7 @@
 
   .btn-theme {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     border: none;
     border-radius: 8px;
     color: white;
@@ -192,7 +192,7 @@
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
 
     &:active {
@@ -202,7 +202,7 @@
 
   .btn-logout {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     border: none;
     border-radius: 8px;
     color: white;
@@ -213,7 +213,7 @@
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
     }
 
     &:active {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '../../../auth/auth-context';
+import LoadingSpinner from '../../../components/ui/loading-spinner';
 import {
   SUPPORT_TICKETS_QUERY,
   CREATE_SUPPORT_TICKET_MUTATION,
@@ -113,7 +114,7 @@ const Support = () => {
   const customers: Customer[] = customers_data?.customers || [];
   const users: User[] = users_data?.users || [];
 
-  if (tickets_loading) return <div className="leads">Loading...</div>;
+  if (tickets_loading) return <LoadingSpinner />;
 
   return (
     <div className="leads">

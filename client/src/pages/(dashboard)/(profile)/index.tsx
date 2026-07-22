@@ -1,5 +1,6 @@
 import { useAuth } from '../../../auth/auth-context';
 import { useTheme } from '../../../theme/use-theme';
+import LoadingSpinner from '../../../components/ui/loading-spinner';
 import './profile.scss';
 
 const Profile = () => {
@@ -7,7 +8,7 @@ const Profile = () => {
   const { theme, setTheme } = useTheme();
 
   if (!user) {
-    return <div className="profile">Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   const current_role = user.roles[current_role_index];

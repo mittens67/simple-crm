@@ -44,26 +44,26 @@ const Home = () => {
       label: 'Total Leads',
       value: leads.length,
       icon: '👥',
-      color: '#667eea',
+      color: '#3b82f6',
     },
     {
       label: 'Customers',
       value: customers.length,
       icon: '🏢',
-      color: '#764ba2',
+      color: '#2563eb',
     },
     {
       label: 'Deal Value',
       value: Math.round(total_deal_value / 1000),
       icon: '💰',
-      color: '#f093fb',
+      color: '#1d4ed8',
       subtitle: 'K',
     },
     {
       label: 'Open Tickets',
       value: open_tickets,
       icon: '🎫',
-      color: '#4facfe',
+      color: '#60a5fa',
     },
   ];
 
