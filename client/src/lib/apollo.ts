@@ -3,8 +3,12 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { get_access_token, refresh_session } from './auth';
 
+// In development, Vite proxies /graphql to the backend.
+// In production, use the full API URL from environment.
+const api_url = import.meta.env.DEV ? '/graphql' : `${import.meta.env.VITE_API_URL}/graphql`;
+
 const http_link = new HttpLink({
-  uri: '/graphql',
+  uri: api_url,
   credentials: 'same-origin',
 });
 
