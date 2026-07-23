@@ -1,6 +1,6 @@
 # Simple CRM
 
-A modern, streamlined Customer Relationship Management (CRM) system built with MERN stack (MongoDB, Express, React, Node.js). Designed to help sales teams manage leads, convert them to customers, track deals, and handle customer support—all in one place.
+A modern, streamlined Customer Relationship Management system built with MERN stack (MongoDB, Express, React, Node.js). Designed to help sales teams manage leads, convert them to customers, track deals, and handle customer support—all in one place.
 
 ## What is a CRM?
 
@@ -10,27 +10,31 @@ A CRM is a tool that helps businesses manage interactions with customers and pro
 
 ## Core Features
 
-### 📊 **Leads Management**
+### Leads Management
+
 Track potential customers from first contact through conversion.
 - Create and manage leads with contact information
 - Assign leads to sales representatives
 - Track conversations and interactions with sales notes
 - Monitor lead status and progress
 
-### 👥 **Customers**
+### Customers
+
 Convert leads into customers and maintain long-term relationships.
 - Auto-created when a lead converts
 - Linked to the sales rep who brought them in
 - Central hub for all customer interactions
 
-### 🎯 **Deals**
+### Deals
+
 Track business opportunities and revenue pipelines.
 - Create deals associated with customers
 - Set deal value and track progress
 - Multiple deal stages to represent sales pipeline
 - Monitor total deal value across your team
 
-### 🎫 **Support Tickets**
+### Support Tickets
+
 Manage customer issues and support requests.
 - Track customer issues and problems
 - Assign to support agents
@@ -39,10 +43,11 @@ Manage customer issues and support requests.
 
 ---
 
-## Business Flow: Lead → Customer → Deal → Support
+## Business Flow: Lead -> Customer -> Deal -> Support
 
-### 1️⃣ **The Lead Stage** (Start Point)
-Someone shows interest in your product/service:
+### The Lead Stage (Start Point)
+
+Someone shows interest in your product or service:
 
 ```
 Lead Created (Status: Open)
@@ -60,11 +65,12 @@ Decision Point...
 - **Open** — New lead, not yet assigned
 - **Pending** — Assigned to a sales rep, in active conversation
 - **Archived** — Lead decided not to move forward (terminal state)
-- **Converted** — Lead became a customer! (terminal state)
+- **Converted** — Lead became a customer (terminal state)
 
 ---
 
-### 2️⃣ **The Conversion** (Lead → Customer)
+### The Conversion (Lead to Customer)
+
 When a lead is ready to do business:
 
 ```
@@ -84,7 +90,8 @@ Lead is Now Read-Only (cannot be edited)
 
 ---
 
-### 3️⃣ **The Deal Stage**
+### The Deal Stage
+
 Once a customer exists, you can create deals:
 
 ```
@@ -115,7 +122,8 @@ Multiple deals can exist for one customer over time.
 
 ---
 
-### 4️⃣ **Support Tickets**
+### Support Tickets
+
 Linked to customers to track issues and service:
 
 ```
@@ -154,37 +162,37 @@ Ticket Closed — End Point
 └─────────────────────────────────────────────────────────────┘
 
 DAY 1: Sales Process
-  ✓ Lead Created: "Acme Corp" → Status: Open
-  ✓ Lead Assigned to: John (Sales Rep)
+  • Lead Created: "Acme Corp" → Status: Open
+  • Lead Assigned to: John (Sales Rep)
 
 DAY 3: Active Engagement
-  ✓ Status Changed to: Pending
-  ✓ John Adds Sales Notes: "Very interested, discussing pricing"
+  • Status Changed to: Pending
+  • John Adds Sales Notes: "Very interested, discussing pricing"
 
 DAY 7: Ready to Do Business
-  ✓ Status Changed to: Converted
-  ✓ System Creates Customer: "Acme Corp"
-  ✓ John is Linked as POC
-  ✓ Archive Notes: "Signed 1-year contract, $50K deal"
-  ✓ Lead is Now Read-Only
+  • Status Changed to: Converted
+  • System Creates Customer: "Acme Corp"
+  • John is Linked as POC
+  • Archive Notes: "Signed 1-year contract, $50K deal"
+  • Lead is Now Read-Only
 
 DAY 8-60: Customer Relationship
-  ✓ Create Deal: "Acme Corp - Premium License"
-  ✓ Deal Value: $50,000
-  ✓ Deal Status: In Progress
-  ✓ John Owns & Tracks This Deal
+  • Create Deal: "Acme Corp - Premium License"
+  • Deal Value: $50,000
+  • Deal Status: In Progress
+  • John Owns & Tracks This Deal
 
 DAY 15: Customer Support
-  ✓ Acme Corp Reports Issue: "Dashboard login broken"
-  ✓ Create Support Ticket
-  ✓ Assigned to: Sarah (Support Agent)
-  ✓ Sarah Resolves Issue in 2 hours
-  ✓ Ticket Closed
+  • Acme Corp Reports Issue: "Dashboard login broken"
+  • Create Support Ticket
+  • Assigned to: Sarah (Support Agent)
+  • Sarah Resolves Issue in 2 hours
+  • Ticket Closed
 
 DAY 60: Deal Closes
-  ✓ Deal Status: Closed Won
-  ✓ Revenue Recorded: $50,000
-  ✓ Deal is Complete
+  • Deal Status: Closed Won
+  • Revenue Recorded: $50,000
+  • Deal is Complete
 
 → Customer Can Still Have Support Tickets
 → New Deals Can Be Created For Same Customer
@@ -197,8 +205,8 @@ DAY 60: Deal Closes
 
 Once a lead reaches these states, it cannot be edited:
 
-- **Archived** — Lead decided not to proceed (sad path ☹️)
-- **Converted** — Lead became a customer (happy path 🎉)
+- **Archived** — Lead decided not to proceed
+- **Converted** — Lead became a customer
 
 You can still view the details and archive notes, but cannot modify them. This prevents accidental changes to closed deals.
 
@@ -206,13 +214,15 @@ You can still view the details and archive notes, but cannot modify them. This p
 
 ## User Roles & Permissions
 
-### 👑 **Admin**
+### Admin
+
 - Full access to everything
 - Manage users and roles
 - View all data across teams
 - Configure permissions
 
-### 💼 **Sales**
+### Sales
+
 - Create and manage leads
 - Assign leads to team members
 - Convert leads to customers
@@ -220,7 +230,8 @@ You can still view the details and archive notes, but cannot modify them. This p
 - View customers they own
 - Access support tickets (read-only)
 
-### 🎯 **Support**
+### Support
+
 - Create and manage support tickets
 - Assign tickets to agents
 - View customers and their history
@@ -233,6 +244,7 @@ You can still view the details and archive notes, but cannot modify them. This p
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 16+
 - MongoDB (local or cloud)
 - pnpm (or npm)
@@ -285,11 +297,8 @@ pnpm seed
 ```
 
 This creates:
-- Admin user (from `.env` ADMIN_EMAIL & ADMIN_PASSWORD)
-- Admin, Sales, and Support roles with permissions
-- **Demo accounts for external visitors:**
-  - Sales Rep: `demo-sales@example.com` / `Demo123`
-  - Support Agent: `demo-support@example.com` / `Demo123`
+- Admin user (from `.env` ADMIN_EMAIL and ADMIN_PASSWORD)
+- Admin, Sales, and Support roles with their respective permissions
 
 ### Demo Accounts
 
@@ -297,16 +306,17 @@ Pre-configured demo accounts are available for testing and demonstrations:
 
 | Role | Email | Password |
 |------|-------|----------|
-| **Sales Rep** | demo-sales@example.com | Demo123 |
-| **Support Agent** | demo-support@example.com | Demo123 |
+| Sales Rep | demo-sales@example.com | Demo123 |
+| Support Agent | demo-support@example.com | Demo123 |
 
-Use these to explore the CRM's features without needing admin access. Demo credentials are displayed on the login screen for convenience.
+Use these accounts to explore the CRM's features without needing admin access. Demo credentials are displayed on the login screen for convenience.
 
 ---
 
 ## Architecture
 
 ### Frontend (React + TypeScript)
+
 - Modern React 18 with hooks
 - Apollo Client for GraphQL queries
 - JWT-based authentication
@@ -314,6 +324,7 @@ Use these to explore the CRM's features without needing admin access. Demo crede
 - Responsive UI with SCSS styling
 
 ### Backend (Node.js + Express)
+
 - Express server with GraphQL API
 - MongoDB with Mongoose ODM
 - JWT authentication with refresh tokens
@@ -321,6 +332,7 @@ Use these to explore the CRM's features without needing admin access. Demo crede
 - Secure password hashing with bcryptjs
 
 ### Database (MongoDB)
+
 - Collections: Users, Roles, Leads, Customers, Deals, SupportTickets
 - Relationships: Leads → Customers, Customers → Deals, Customers → Tickets
 - Soft deletes: Status-based rather than hard deletes
@@ -329,13 +341,14 @@ Use these to explore the CRM's features without needing admin access. Demo crede
 
 ## Technology & Architecture Highlights
 
-### 🎨 Frontend Stack
+### Frontend Stack
+
 - **React 19 + TypeScript** — Latest React with strict type-checking (`noUnusedLocals`, `noFallthroughCasesInSwitch`)
 - **Vite** — Lightning-fast dev server with React Refresh for HMR
 - **Apollo Client** — GraphQL client with `InMemoryCache` for intelligent query result caching
 - **SCSS** — Powerful stylesheet language with nesting, mixins, variables for maintainable CSS
 - **React Router v7** — Modern client-side routing with protected route middleware
-- **Light/Dark Mode Theme System** — CSS variables-based theming with React Context, persisted to MongoDB user preferences; toggle available in profile page
+- **Light and Dark Mode Theme System** — CSS variables-based theming with React Context, persisted to MongoDB user preferences; toggle available in profile page
 
 **State Management Pattern:**
 - Apollo Client handles all remote data (GraphQL queries, mutations, caching)
@@ -349,7 +362,8 @@ Use these to explore the CRM's features without needing admin access. Demo crede
 - **Auth context with useCallback memoization** — login/logout/role-switch functions are stable references, preventing unnecessary re-renders in child components
 - **CSS Variables Theming** — Light/dark mode implemented via CSS custom properties (`--bg-primary`, `--text-primary`, etc.) in `theme-variables.scss`, with theme preference persisted to user MongoDB document; theme toggle in profile page with real-time sync across all pages
 
-### 📡 Backend Stack
+### Backend Stack
+
 - **Node.js + Express** — Lightweight HTTP server
 - **Apollo Server** — GraphQL server with context injection for per-request auth state
 - **MongoDB + Mongoose** — NoSQL database with document validation and schema migration support
@@ -382,7 +396,8 @@ Use these to explore the CRM's features without needing admin access. Demo crede
 - **Custom Scalar Types** — `JSON` scalar (via `graphql-type-json`) for complex permission maps and audit metadata
 - **Consistent Error Codes** — All errors use `GraphQLError` with `extensions.code` (`UNAUTHENTICATED`, `FORBIDDEN`, `BAD_USER_INPUT`) for client-side error handling
 
-### 🏗️ Design Patterns for System Design Interviews
+### Design Patterns for System Design Interviews
+
 - **RBAC with Wildcards** — Demonstrates permission scaling: exact match → resource wildcard → admin wildcard (O(n) check, n = permission depth)
 - **Soft Delete Pattern** — Shows audit-friendly deletion: status mutations preserve history, enable recovery, support compliance audits
 - **Session Revocation Chain** — Multi-device logout via central revocation; theft detection via reuse-of-revoked-token → cascade-revoke-all
@@ -395,12 +410,14 @@ Use these to explore the CRM's features without needing admin access. Demo crede
 ## Key Concepts
 
 ### Soft Delete Pattern
+
 Instead of deleting records, we use status to mark them as archived:
 - Leads use status field: Open, Pending, Archived, Converted
 - Support Tickets use status: Open, In Progress, Resolved, Closed
 - Historical data is preserved, auditable, and recoverable
 
 ### Auto-Customer Creation
+
 When a lead is converted:
 1. Lead status changes to "Converted"
 2. System automatically creates a new Customer record
@@ -409,6 +426,7 @@ When a lead is converted:
 5. Lead record becomes read-only
 
 ### Permission Model
+
 Granular, action-level permissions:
 - `leads.read` — view leads
 - `leads.create` — create new leads
@@ -421,18 +439,21 @@ Granular, action-level permissions:
 ## Development Notes
 
 ### Running Tests
+
 ```bash
 cd client
 pnpm test
 ```
 
 ### Linting
+
 ```bash
 cd client
 pnpm lint
 ```
 
 ### Type Checking
+
 ```bash
 pnpm typecheck
 ```
@@ -478,4 +499,4 @@ Private project.
 
 ---
 
-**Simple CRM** — Manage leads, convert customers, track deals, and support clients. All in one place. 🚀
+**Simple CRM** — Manage leads, convert customers, track deals, and support clients. All in one place.
