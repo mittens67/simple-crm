@@ -71,6 +71,7 @@ export default gql`
   }
 
   type Query {
+    health: String!
     users: [User!]!
     user(id: ID!): User
     me: User

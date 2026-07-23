@@ -20,6 +20,7 @@ const invalid_credentials = () =>
 
 export default {
   Query: {
+    health: () => 'ok',
     users: async (_: any, __: any, context: ApolloContext) => {
       require_permission(context, 'users.read');
       return await User.find();
