@@ -13,6 +13,7 @@ import {
   has_permission,
   refresh_session,
   set_access_token,
+  set_current_role_id,
   set_session_expired_handler,
 } from '../lib/auth';
 
@@ -83,6 +84,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       set_access_token(payload.accessToken);
       set_user(payload.user);
       set_current_role_index(0);
+      if (payload.user?.roles?.[0]?.id) {
+        set_current_role_id(payload.user.roles[0].id);
+      }
       set_status('authenticated');
     },
     [client]
@@ -93,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await client.mutate({ mutation: LOGOUT });
     } finally {
       set_access_token(null);
+      set_current_role_id(null);
       set_user(null);
       set_current_role_index(0);
       set_status('unauthenticated');
@@ -103,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const switch_role = useCallback((role_index: number) => {
     if (user && role_index >= 0 && role_index < user.roles.length) {
       set_current_role_index(role_index);
+      set_current_role_id(user.roles[role_index].id);
     }
   }, [user]);
 

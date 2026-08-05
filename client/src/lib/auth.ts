@@ -16,10 +16,16 @@ export interface AuthUser {
 }
 
 let access_token: string | null = null;
+let current_role_id: string | null = null;
 
 export const get_access_token = () => access_token;
 export const set_access_token = (token: string | null) => {
   access_token = token;
+};
+
+export const get_current_role_id = () => current_role_id;
+export const set_current_role_id = (role_id: string | null) => {
+  current_role_id = role_id;
 };
 
 let session_expired_handler: (() => void) | null = null;

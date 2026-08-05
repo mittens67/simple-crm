@@ -1,7 +1,7 @@
 import { ApolloClient, InMemoryCache, HttpLink, from, fromPromise } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
-import { get_access_token, refresh_session } from './auth';
+import { get_access_token, get_current_role_id, refresh_session } from './auth';
 
 // In development, Vite proxies /graphql to the backend.
 // In production, use the full API URL from environment.
@@ -14,10 +14,12 @@ const http_link = new HttpLink({
 
 const auth_link = setContext((_, { headers }) => {
   const token = get_access_token();
+  const role_id = get_current_role_id();
   return {
     headers: {
       ...headers,
       ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(role_id ? { 'x-active-role-id': role_id } : {}),
     },
   };
 });

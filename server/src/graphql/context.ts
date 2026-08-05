@@ -25,10 +25,19 @@ export const context = async ({
       const payload = verify_access_token(token);
       const user = await User.findById(payload.sub).populate('role_ids');
       if (user && user.is_active) {
-        // Use the first role for permission checks; client will implement role switching
-        const role = (user.role_ids && user.role_ids.length > 0)
-          ? (user.role_ids[0] as any)
-          : null;
+        let role = null;
+        const roles = user.role_ids as any[];
+        if (roles && roles.length > 0) {
+          const requested_role_id = req.headers['x-active-role-id'];
+          if (requested_role_id) {
+            const requested_role = roles.find(
+              (r: any) => String(r._id) === String(requested_role_id)
+            );
+            role = requested_role || roles[0];
+          } else {
+            role = roles[0];
+          }
+        }
         return { user, role, req, res };
       }
     } catch {
