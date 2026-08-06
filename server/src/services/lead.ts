@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import User from '../models/user';
 import Customer from '../models/customer';
 import ActivityLog from '../models/activity-log';
@@ -6,6 +5,7 @@ import { lead_repository } from '../repositories/lead';
 import { ApolloContext } from '../graphql/context';
 import { require_permission } from '../auth/authorize';
 import { create_lead_schema, update_lead_schema } from '../schemas/lead';
+import { ValidationError, NotFoundError } from '../utils/errors';
 
 export class LeadService {
   async getLeads(context: ApolloContext) {
@@ -17,9 +17,7 @@ export class LeadService {
     require_permission(context, 'leads.read');
     const lead = await lead_repository.findById(id);
     if (!lead) {
-      throw new GraphQLError('Lead not found', {
-        extensions: { code: 'NOT_FOUND' },
-      });
+      throw new NotFoundError('Lead not found');
     }
     return lead;
   }
@@ -34,9 +32,7 @@ export class LeadService {
     const validation = create_lead_schema.safeParse(input);
     if (!validation.success) {
       const errors = validation.error.issues.map(issue => issue.message).join(', ');
-      throw new GraphQLError(`Validation failed: ${errors}`, {
-        extensions: { code: 'BAD_USER_INPUT' },
-      });
+      throw new ValidationError(errors);
     }
 
     const validated_input = validation.data;
@@ -44,9 +40,7 @@ export class LeadService {
     if (validated_input.assigned_rep_id) {
       const user_exists = await User.findById(validated_input.assigned_rep_id);
       if (!user_exists) {
-        throw new GraphQLError('Assigned representative not found', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
+        throw new NotFoundError('Assigned representative not found');
       }
       (validated_input as any).status = 'Pending';
     }
@@ -73,26 +67,20 @@ export class LeadService {
     const validation = update_lead_schema.safeParse(input);
     if (!validation.success) {
       const errors = validation.error.issues.map(issue => issue.message).join(', ');
-      throw new GraphQLError(`Validation failed: ${errors}`, {
-        extensions: { code: 'BAD_USER_INPUT' },
-      });
+      throw new ValidationError(errors);
     }
 
     const validated_input = validation.data;
 
     const lead = await lead_repository.findById(id);
     if (!lead) {
-      throw new GraphQLError('Lead not found', {
-        extensions: { code: 'NOT_FOUND' },
-      });
+      throw new NotFoundError('Lead not found');
     }
 
     if (validated_input.assigned_rep_id) {
       const user_exists = await User.findById(validated_input.assigned_rep_id);
       if (!user_exists) {
-        throw new GraphQLError('Assigned representative not found', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
+        throw new NotFoundError('Assigned representative not found');
       }
       // Auto-set to Pending when assigning a rep
       validated_input.status = 'Pending';
@@ -116,9 +104,7 @@ export class LeadService {
 
     const updated_lead = await lead_repository.update(id, validated_input as any);
     if (!updated_lead) {
-      throw new GraphQLError('Lead not found', {
-        extensions: { code: 'NOT_FOUND' },
-      });
+      throw new NotFoundError('Lead not found');
     }
 
     await ActivityLog.create({
@@ -135,9 +121,7 @@ export class LeadService {
 
     const lead = await lead_repository.findById(id);
     if (!lead) {
-      throw new GraphQLError('Lead not found', {
-        extensions: { code: 'NOT_FOUND' },
-      });
+      throw new NotFoundError('Lead not found');
     }
 
     // Soft delete: mark the lead as archived
