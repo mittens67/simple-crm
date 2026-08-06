@@ -22,6 +22,11 @@ export default gql`
         updated_at: String
     }
 
+    type LeadsResult {
+        data: [Lead!]!
+        total: Int!
+    }
+
     input CreateLead {
         name: String!
         email: String!
@@ -48,7 +53,7 @@ export default gql`
     }
 
     type Query {
-        leads: [Lead!]!
+        leads(search: String, limit: Int, offset: Int): LeadsResult!
         lead(id: ID!): Lead
     }
 `;

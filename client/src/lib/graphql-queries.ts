@@ -14,26 +14,29 @@ export const USER_FIELDS = `
 
 // Leads
 export const LEADS_QUERY = gql`
-  query GetLeads {
-    leads {
-      id
-      name
-      email
-      phone
-      status
-      assigned_rep {
+  query GetLeads($search: String, $limit: Int, $offset: Int) {
+    leads(search: $search, limit: $limit, offset: $offset) {
+      data {
         id
         name
         email
+        phone
+        status
+        assigned_rep {
+          id
+          name
+          email
+        }
+        customer {
+          id
+          name
+        }
+        sales_notes
+        archive_notes
+        created_at
+        updated_at
       }
-      customer {
-        id
-        name
-      }
-      sales_notes
-      archive_notes
-      created_at
-      updated_at
+      total
     }
   }
 `;

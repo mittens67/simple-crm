@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '../../../../auth/auth-context';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
@@ -47,9 +47,22 @@ const Leads = () => {
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<Lead | null>(null);
   const [viewing, set_viewing] = useState<Lead | null>(null);
-  const [search, set_search] = useState('');
+  const [search_input, set_search_input] = useState('');
+  const [search_query, set_search_query] = useState('');
+  const [limit] = useState(20);
+  const [offset, set_offset] = useState(0);
 
-  const { data: leads_data, loading: leads_loading, refetch: refetch_leads } = useQuery(LEADS_QUERY);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      set_search_query(search_input);
+      set_offset(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search_input]);
+
+  const { data: leads_data, loading: leads_loading, refetch: refetch_leads } = useQuery(LEADS_QUERY, {
+    variables: { search: search_query || undefined, limit, offset },
+  });
   const { data: users_data } = useQuery(USERS_QUERY);
 
   const [create_lead] = useMutation(CREATE_LEAD_MUTATION, {
@@ -109,12 +122,9 @@ const Leads = () => {
     set_viewing(null);
   };
 
-  const leads = leads_data?.leads || [];
-  const filtered_leads = leads.filter((lead: Lead) =>
-    lead.name.toLowerCase().includes(search.toLowerCase()) ||
-    lead.email.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const leads = leads_data?.leads?.data || [];
+  const total = leads_data?.leads?.total || 0;
+  const max_pages = Math.ceil(total / limit);
   const users: User[] = users_data?.users || [];
 
   if (leads_loading) return <LoadingSpinner />;
@@ -133,9 +143,9 @@ const Leads = () => {
       <div className="leads-search">
         <input
           type="text"
-          placeholder="Search leads..."
-          value={search}
-          onChange={(e) => set_search(e.target.value)}
+          placeholder="Search leads by name, email, or phone..."
+          value={search_input}
+          onChange={(e) => set_search_input(e.target.value)}
         />
       </div>
 
@@ -152,7 +162,7 @@ const Leads = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_leads.map((lead: Lead) => (
+          {leads.map((lead: Lead) => (
             <tr key={lead.id}>
               <td>{lead.name}</td>
               <td>{lead.email}</td>
@@ -185,6 +195,26 @@ const Leads = () => {
           ))}
         </tbody>
       </table>
+
+      <div className="pagination-controls" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button
+          className="btn-secondary"
+          onClick={() => set_offset(Math.max(0, offset - limit))}
+          disabled={offset === 0}
+        >
+          ← Previous
+        </button>
+        <span style={{ fontSize: '14px' }}>
+          Page {offset / limit + 1} of {max_pages || 1} ({total} total)
+        </span>
+        <button
+          className="btn-secondary"
+          onClick={() => set_offset(offset + limit)}
+          disabled={offset + limit >= total}
+        >
+          Next →
+        </button>
+      </div>
 
       {viewing && (
         <LeadView

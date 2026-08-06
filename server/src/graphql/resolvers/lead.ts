@@ -5,8 +5,8 @@ import { lead_service } from '../../services/lead';
 import { create_query_resolver, create_mutation_resolver } from '../../utils/resolver-wrapper';
 
 const query_resolvers = create_query_resolver({
-  leads: async (_: any, __: any, context: ApolloContext) => {
-    return await lead_service.getLeads(context);
+  leads: async (_: any, { search, limit, offset }: any, context: ApolloContext) => {
+    return await lead_service.getLeads(context, search, limit, offset);
   },
   lead: async (_: any, { id }: { id: string }, context: ApolloContext) => {
     return await lead_service.getLead(id, context);

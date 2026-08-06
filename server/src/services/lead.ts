@@ -8,9 +8,9 @@ import { create_lead_schema, update_lead_schema } from '../schemas/lead';
 import { ValidationError, NotFoundError } from '../utils/errors';
 
 export class LeadService {
-  async getLeads(context: ApolloContext) {
+  async getLeads(context: ApolloContext, search?: string, limit?: number, offset?: number) {
     require_permission(context, 'leads.read');
-    return await lead_repository.findAll();
+    return await lead_repository.findAllWithPagination(search, limit || 20, offset || 0);
   }
 
   async getLead(id: string, context: ApolloContext) {
