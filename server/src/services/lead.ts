@@ -5,6 +5,7 @@ import ActivityLog from '../models/activity-log';
 import { lead_repository } from '../repositories/lead';
 import { ApolloContext } from '../graphql/context';
 import { require_permission } from '../auth/authorize';
+import { create_lead_schema, update_lead_schema } from '../schemas/lead';
 
 export class LeadService {
   async getLeads(context: ApolloContext) {
@@ -24,27 +25,33 @@ export class LeadService {
   }
 
   async createLead(
-    input: {
-      name: string;
-      email: string;
-      phone: string;
-      status?: string;
-      assigned_rep_id?: string;
-    },
+    input: any,
     context: ApolloContext
   ) {
     const actor = require_permission(context, 'leads.create');
 
-    if (input.assigned_rep_id) {
-      const user_exists = await User.findById(input.assigned_rep_id);
+    // Validate input
+    const validation = create_lead_schema.safeParse(input);
+    if (!validation.success) {
+      const errors = validation.error.issues.map(issue => issue.message).join(', ');
+      throw new GraphQLError(`Validation failed: ${errors}`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    const validated_input = validation.data;
+
+    if (validated_input.assigned_rep_id) {
+      const user_exists = await User.findById(validated_input.assigned_rep_id);
       if (!user_exists) {
         throw new GraphQLError('Assigned representative not found', {
           extensions: { code: 'BAD_USER_INPUT' },
         });
       }
+      (validated_input as any).status = 'Pending';
     }
 
-    const lead = await lead_repository.create(input);
+    const lead = await lead_repository.create(validated_input);
 
     await ActivityLog.create({
       user_id: actor._id,
@@ -57,19 +64,21 @@ export class LeadService {
 
   async updateLead(
     id: string,
-    input: Partial<{
-      name: string;
-      email: string;
-      phone: string;
-      status: 'Open' | 'Pending' | 'Archived' | 'Converted';
-      assigned_rep_id: string;
-      sales_notes: string;
-      archive_notes: string;
-      customer_id: any;
-    }>,
+    input: any,
     context: ApolloContext
   ) {
     const actor = require_permission(context, 'leads.update');
+
+    // Validate input
+    const validation = update_lead_schema.safeParse(input);
+    if (!validation.success) {
+      const errors = validation.error.issues.map(issue => issue.message).join(', ');
+      throw new GraphQLError(`Validation failed: ${errors}`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    const validated_input = validation.data;
 
     const lead = await lead_repository.findById(id);
     if (!lead) {
@@ -78,17 +87,22 @@ export class LeadService {
       });
     }
 
-    if (input.assigned_rep_id) {
-      const user_exists = await User.findById(input.assigned_rep_id);
+    if (validated_input.assigned_rep_id) {
+      const user_exists = await User.findById(validated_input.assigned_rep_id);
       if (!user_exists) {
         throw new GraphQLError('Assigned representative not found', {
           extensions: { code: 'BAD_USER_INPUT' },
         });
       }
+      // Auto-set to Pending when assigning a rep
+      validated_input.status = 'Pending';
+    } else if ('assigned_rep_id' in input && !input.assigned_rep_id) {
+      // Auto-set to Open when removing assigned rep
+      validated_input.status = 'Open';
     }
 
     // Auto-create customer when lead is converted
-    if (input.status === 'Converted' && lead.status !== 'Converted') {
+    if (validated_input.status === 'Converted' && lead.status !== 'Converted') {
       const customer = new Customer({
         name: lead.name,
         email: lead.email,
@@ -97,10 +111,10 @@ export class LeadService {
       });
       await customer.save();
 
-      input.customer_id = customer._id as any;
+      validated_input.customer_id = customer._id as any;
     }
 
-    const updated_lead = await lead_repository.update(id, input as any);
+    const updated_lead = await lead_repository.update(id, validated_input as any);
     if (!updated_lead) {
       throw new GraphQLError('Lead not found', {
         extensions: { code: 'NOT_FOUND' },
