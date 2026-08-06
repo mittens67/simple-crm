@@ -169,7 +169,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
             </div>
           )}
 
-          {(form_data.status === 'Archived' || form_data.status === 'Converted') && (
+          {form_data.status === 'Archived' && (
             <div className="form-group">
               <label>Archive Notes</label>
               <textarea
@@ -177,7 +177,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
                 value={form_data.archive_notes}
                 onChange={handle_change}
                 rows={3}
-                placeholder="Reason for archiving or converting..."
+                placeholder="Reason for archiving..."
               />
             </div>
           )}

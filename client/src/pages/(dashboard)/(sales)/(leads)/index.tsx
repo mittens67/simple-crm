@@ -8,6 +8,7 @@ import {
   UPDATE_LEAD_MUTATION,
   DELETE_LEAD_MUTATION,
   USERS_QUERY,
+  CUSTOMERS_QUERY,
 } from '../../../../lib/graphql-queries';
 import LeadModal from './lead-modal';
 import LeadView from './lead-view';
@@ -63,6 +64,7 @@ const Leads = () => {
   });
 
   const [update_lead] = useMutation(UPDATE_LEAD_MUTATION, {
+    refetchQueries: [{ query: CUSTOMERS_QUERY }],
     onCompleted: () => {
       refetch_leads();
       set_modal_open(false);
