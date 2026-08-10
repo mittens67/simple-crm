@@ -42,7 +42,7 @@ const start_server = async () => {
     skip: (req) => {
       const body = (req as any).body;
       if (!body || !body.operationName) return true;
-      return !['login', 'refreshToken'].includes(body.operationName);
+      return !['Login', 'RefreshToken'].includes(body.operationName);
     },
     message: 'Too many auth attempts, please try again later.',
     standardHeaders: true,
