@@ -39,7 +39,7 @@ export const update_lead_schema = z.object({
     .optional(),
   phone: z.string().min(1, 'Phone is required').max(20, 'Phone must be 20 characters or less').optional(),
   status: z.enum(['Open', 'Pending', 'Archived', 'Converted']).optional(),
-  assigned_rep_id: z.string().optional(),
+  assigned_rep_id: z.string().nullable().optional(),
   sales_notes: z.string()
     .max(2000, 'Sales notes must be 2000 characters or less')
     .transform(sanitize_text)
