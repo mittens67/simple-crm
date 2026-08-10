@@ -29,7 +29,7 @@ const Home = () => {
   const { data: deals_data } = useQuery(DEALS_QUERY);
   const { data: tickets_data } = useQuery(SUPPORT_TICKETS_QUERY);
 
-  const leads = leads_data?.leads || [];
+  const leads = leads_data?.leads?.data || [];
   const customers = customers_data?.customers || [];
   const deals = deals_data?.deals || [];
   const tickets = tickets_data?.supportTickets || [];

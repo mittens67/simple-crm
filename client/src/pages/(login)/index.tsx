@@ -25,7 +25,12 @@ const Login = () => {
       await login(email, password);
       navigate('/', { replace: true });
     } catch (err) {
-      set_error(err instanceof Error ? err.message : 'Login failed');
+      let error_msg = err instanceof Error ? err.message : 'Login failed';
+      // Convert technical error messages to user-friendly ones
+      if (error_msg.includes('429') || error_msg.includes('too many')) {
+        error_msg = 'Too many login attempts. Please wait a few minutes before trying again.';
+      }
+      set_error(error_msg);
     } finally {
       set_submitting(false);
     }
