@@ -1,83 +1,57 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '../../../../auth/auth-context';
+import { useCustomers, useUsers } from '../../../../hooks';
+import type { Customer } from '../../../../types/customer';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
-import {
-  CUSTOMERS_QUERY,
-  CREATE_CUSTOMER_MUTATION,
-  UPDATE_CUSTOMER_MUTATION,
-  DELETE_CUSTOMER_MUTATION,
-  USERS_QUERY,
-} from '../../../../lib/graphql-queries';
 import CustomerModal from './customer-modal';
 import '../(leads)/leads.scss';
 
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  assigned_rep?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
 const Customers = () => {
   const { can } = useAuth();
+  const { customers, loading, create, update, delete: deleteCustomer, setError: setCustomers_error } = useCustomers();
+  const { users } = useUsers();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<Customer | null>(null);
-  const [search, set_search] = useState('');
+  const [search_input, set_search_input] = useState('');
 
-  const { data: customers_data, loading: customers_loading, refetch: refetch_customers } = useQuery(CUSTOMERS_QUERY);
-  const { data: users_data } = useQuery(USERS_QUERY);
-
-  const [create_customer] = useMutation(CREATE_CUSTOMER_MUTATION, {
-    onCompleted: () => {
-      refetch_customers();
-      set_modal_open(false);
-    },
-    onError: (error) => {
-      console.error('Create customer error:', error.message);
-      alert(`Error creating customer: ${error.message}`);
-    },
-  });
-
-  const [update_customer] = useMutation(UPDATE_CUSTOMER_MUTATION, {
-    onCompleted: () => {
-      refetch_customers();
-      set_modal_open(false);
-      set_editing(null);
-    },
-  });
-
-  const [delete_customer] = useMutation(DELETE_CUSTOMER_MUTATION, {
-    onCompleted: () => {
-      refetch_customers();
-    },
-  });
+  const filtered_customers = customers.filter((customer: Customer) =>
+    customer.name.toLowerCase().includes(search_input.toLowerCase()) ||
+    customer.email.toLowerCase().includes(search_input.toLowerCase())
+  );
 
   const handle_create = async (input: any) => {
-    await create_customer({ variables: { input } });
+    try {
+      await create(input as any);
+      set_modal_open(false);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to create customer';
+      setCustomers_error(error_msg);
+      alert(`Error creating customer: ${error_msg}`);
+    }
   };
 
   const handle_update = async (input: any) => {
     if (!editing) return;
-    await update_customer({ variables: { id: editing.id, input } });
+    try {
+      await update(editing.id, input as any);
+      set_modal_open(false);
+      set_editing(null);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to update customer';
+      setCustomers_error(error_msg);
+      alert(`Error updating customer: ${error_msg}`);
+    }
   };
 
   const handle_delete = async (id: string) => {
     if (window.confirm('Are you sure?')) {
-      await delete_customer({ variables: { id } });
+      try {
+        await deleteCustomer(id);
+      } catch (err) {
+        const error_msg = err instanceof Error ? err.message : 'Failed to delete customer';
+        setCustomers_error(error_msg);
+        alert(`Error deleting customer: ${error_msg}`);
+      }
     }
   };
 
@@ -96,15 +70,7 @@ const Customers = () => {
     set_editing(null);
   };
 
-  const customers = customers_data?.customers || [];
-  const filtered_customers = customers.filter((customer: Customer) =>
-    customer.name.toLowerCase().includes(search.toLowerCase()) ||
-    customer.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const users: User[] = users_data?.users || [];
-
-  if (customers_loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="leads">
@@ -121,8 +87,9 @@ const Customers = () => {
         <input
           type="text"
           placeholder="Search customers..."
-          value={search}
-          onChange={(e) => set_search(e.target.value)}
+          value={search_input}
+          onChange={(e) => set_search_input(e.target.value)}
+          disabled={loading}
         />
       </div>
 

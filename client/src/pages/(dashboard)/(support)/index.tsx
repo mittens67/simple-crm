@@ -1,92 +1,57 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '../../../auth/auth-context';
+import { useSupportTickets, useCustomers, useUsers } from '../../../hooks';
 import LoadingSpinner from '../../../components/ui/loading-spinner';
-import {
-  SUPPORT_TICKETS_QUERY,
-  CREATE_SUPPORT_TICKET_MUTATION,
-  UPDATE_SUPPORT_TICKET_MUTATION,
-  DELETE_SUPPORT_TICKET_MUTATION,
-  CUSTOMERS_QUERY,
-  USERS_QUERY,
-} from '../../../lib/graphql-queries';
 import SupportTicketModal from './support-ticket-modal';
 import '../(sales)/(leads)/leads.scss';
 
-interface SupportTicket {
-  id: string;
-  customer: {
-    id: string;
-    name: string;
-  };
-  assigned_agent?: {
-    id: string;
-    name: string;
-  };
-  status: string;
-  issue_summary: string;
-  internal_notes: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Customer {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-}
-
 const Support = () => {
   const { can } = useAuth();
+  const { tickets, loading, create, update, delete: deleteTicket, setError: setTickets_error } = useSupportTickets();
+  const { customers } = useCustomers();
+  const { users } = useUsers();
   const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<SupportTicket | null>(null);
-  const [search, set_search] = useState('');
+  const [editing, set_editing] = useState<any>(null);
+  const [search_input, set_search_input] = useState('');
 
-  const { data: tickets_data, loading: tickets_loading, refetch: refetch_tickets } = useQuery(SUPPORT_TICKETS_QUERY);
-  const { data: customers_data } = useQuery(CUSTOMERS_QUERY);
-  const { data: users_data } = useQuery(USERS_QUERY);
-
-  const [create_ticket] = useMutation(CREATE_SUPPORT_TICKET_MUTATION, {
-    onCompleted: () => {
-      refetch_tickets();
-      set_modal_open(false);
-    },
-    onError: (error) => {
-      console.error('Create ticket error:', error.message);
-      alert(`Error creating ticket: ${error.message}`);
-    },
-  });
-
-  const [update_ticket] = useMutation(UPDATE_SUPPORT_TICKET_MUTATION, {
-    onCompleted: () => {
-      refetch_tickets();
-      set_modal_open(false);
-      set_editing(null);
-    },
-  });
-
-  const [delete_ticket] = useMutation(DELETE_SUPPORT_TICKET_MUTATION, {
-    onCompleted: () => {
-      refetch_tickets();
-    },
-  });
+  const filtered_tickets = tickets.filter((ticket: any) =>
+    ticket.issue_summary.toLowerCase().includes(search_input.toLowerCase()) ||
+    ticket.customer.name.toLowerCase().includes(search_input.toLowerCase())
+  );
 
   const handle_create = async (input: any) => {
-    await create_ticket({ variables: { input } });
+    try {
+      await create(input as any);
+      set_modal_open(false);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to create ticket';
+      setTickets_error(error_msg);
+      alert(`Error creating ticket: ${error_msg}`);
+    }
   };
 
   const handle_update = async (input: any) => {
     if (!editing) return;
-    await update_ticket({ variables: { id: editing.id, input } });
+    try {
+      await update(editing.id, input as any);
+      set_modal_open(false);
+      set_editing(null);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to update ticket';
+      setTickets_error(error_msg);
+      alert(`Error updating ticket: ${error_msg}`);
+    }
   };
 
   const handle_delete = async (id: string) => {
     if (window.confirm('Are you sure?')) {
-      await delete_ticket({ variables: { id } });
+      try {
+        await deleteTicket(id);
+      } catch (err) {
+        const error_msg = err instanceof Error ? err.message : 'Failed to delete ticket';
+        setTickets_error(error_msg);
+        alert(`Error deleting ticket: ${error_msg}`);
+      }
     }
   };
 
@@ -95,7 +60,7 @@ const Support = () => {
     set_modal_open(true);
   };
 
-  const handle_open_edit = (ticket: SupportTicket) => {
+  const handle_open_edit = (ticket: any) => {
     set_editing(ticket);
     set_modal_open(true);
   };
@@ -105,16 +70,7 @@ const Support = () => {
     set_editing(null);
   };
 
-  const tickets = tickets_data?.supportTickets || [];
-  const filtered_tickets = tickets.filter((ticket: SupportTicket) =>
-    ticket.issue_summary.toLowerCase().includes(search.toLowerCase()) ||
-    ticket.customer.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const customers: Customer[] = customers_data?.customers || [];
-  const users: User[] = users_data?.users || [];
-
-  if (tickets_loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="leads">
@@ -131,8 +87,9 @@ const Support = () => {
         <input
           type="text"
           placeholder="Search tickets..."
-          value={search}
-          onChange={(e) => set_search(e.target.value)}
+          value={search_input}
+          onChange={(e) => set_search_input(e.target.value)}
+          disabled={loading}
         />
       </div>
 
@@ -147,7 +104,7 @@ const Support = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_tickets.map((ticket: SupportTicket) => (
+          {filtered_tickets.map((ticket: any) => (
             <tr key={ticket.id}>
               <td>{ticket.issue_summary}</td>
               <td>{ticket.customer.name}</td>

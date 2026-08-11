@@ -1,93 +1,57 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '../../../../auth/auth-context';
+import { useDeals, useCustomers, useUsers } from '../../../../hooks';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
-import {
-  DEALS_QUERY,
-  CREATE_DEAL_MUTATION,
-  UPDATE_DEAL_MUTATION,
-  DELETE_DEAL_MUTATION,
-  CUSTOMERS_QUERY,
-  USERS_QUERY,
-} from '../../../../lib/graphql-queries';
 import DealModal from './deal-modal';
 import '../(leads)/leads.scss';
 
-interface Deal {
-  id: string;
-  title: string;
-  customer: {
-    id: string;
-    name: string;
-  };
-  owner?: {
-    id: string;
-    name: string;
-  };
-  value: number;
-  status: string;
-  stage: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Customer {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-}
-
 const Deals = () => {
   const { can } = useAuth();
+  const { deals, loading, create, update, delete: deleteDeal, setError: setDeals_error } = useDeals();
+  const { customers } = useCustomers();
+  const { users } = useUsers();
   const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<Deal | null>(null);
-  const [search, set_search] = useState('');
+  const [editing, set_editing] = useState<any>(null);
+  const [search_input, set_search_input] = useState('');
 
-  const { data: deals_data, loading: deals_loading, refetch: refetch_deals } = useQuery(DEALS_QUERY);
-  const { data: customers_data } = useQuery(CUSTOMERS_QUERY);
-  const { data: users_data } = useQuery(USERS_QUERY);
-
-  const [create_deal] = useMutation(CREATE_DEAL_MUTATION, {
-    onCompleted: () => {
-      refetch_deals();
-      set_modal_open(false);
-    },
-    onError: (error) => {
-      console.error('Create deal error:', error.message);
-      alert(`Error creating deal: ${error.message}`);
-    },
-  });
-
-  const [update_deal] = useMutation(UPDATE_DEAL_MUTATION, {
-    onCompleted: () => {
-      refetch_deals();
-      set_modal_open(false);
-      set_editing(null);
-    },
-  });
-
-  const [delete_deal] = useMutation(DELETE_DEAL_MUTATION, {
-    onCompleted: () => {
-      refetch_deals();
-    },
-  });
+  const filtered_deals = deals.filter((deal: any) =>
+    deal.title.toLowerCase().includes(search_input.toLowerCase()) ||
+    deal.customer.name.toLowerCase().includes(search_input.toLowerCase())
+  );
 
   const handle_create = async (input: any) => {
-    await create_deal({ variables: { input } });
+    try {
+      await create(input as any);
+      set_modal_open(false);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to create deal';
+      setDeals_error(error_msg);
+      alert(`Error creating deal: ${error_msg}`);
+    }
   };
 
   const handle_update = async (input: any) => {
     if (!editing) return;
-    await update_deal({ variables: { id: editing.id, input } });
+    try {
+      await update(editing.id, input as any);
+      set_modal_open(false);
+      set_editing(null);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to update deal';
+      setDeals_error(error_msg);
+      alert(`Error updating deal: ${error_msg}`);
+    }
   };
 
   const handle_delete = async (id: string) => {
     if (window.confirm('Are you sure?')) {
-      await delete_deal({ variables: { id } });
+      try {
+        await deleteDeal(id);
+      } catch (err) {
+        const error_msg = err instanceof Error ? err.message : 'Failed to delete deal';
+        setDeals_error(error_msg);
+        alert(`Error deleting deal: ${error_msg}`);
+      }
     }
   };
 
@@ -96,7 +60,7 @@ const Deals = () => {
     set_modal_open(true);
   };
 
-  const handle_open_edit = (deal: Deal) => {
+  const handle_open_edit = (deal: any) => {
     set_editing(deal);
     set_modal_open(true);
   };
@@ -106,16 +70,7 @@ const Deals = () => {
     set_editing(null);
   };
 
-  const deals = deals_data?.deals || [];
-  const filtered_deals = deals.filter((deal: Deal) =>
-    deal.title.toLowerCase().includes(search.toLowerCase()) ||
-    deal.customer.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const customers: Customer[] = customers_data?.customers || [];
-  const users: User[] = users_data?.users || [];
-
-  if (deals_loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="leads">
@@ -132,8 +87,9 @@ const Deals = () => {
         <input
           type="text"
           placeholder="Search deals..."
-          value={search}
-          onChange={(e) => set_search(e.target.value)}
+          value={search_input}
+          onChange={(e) => set_search_input(e.target.value)}
+          disabled={loading}
         />
       </div>
 
@@ -150,7 +106,7 @@ const Deals = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_deals.map((deal: Deal) => (
+          {filtered_deals.map((deal: any) => (
             <tr key={deal.id}>
               <td>{deal.title}</td>
               <td>{deal.customer.name}</td>
