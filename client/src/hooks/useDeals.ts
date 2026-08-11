@@ -16,26 +16,28 @@ export const useDeals = () => {
   });
 
   const [createDealMutation] = useMutation(CREATE_DEAL_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [updateDealMutation] = useMutation(UPDATE_DEAL_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [deleteDealMutation] = useMutation(DELETE_DEAL_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const create = useCallback(
     async (input: DealInput) => {
-      try {
-        const { data: result } = await createDealMutation({ variables: { input } });
-        await refetch();
-        return result.createDeal;
-      } catch (err) {
-        throw err;
+      const response = await createDealMutation({ variables: { input } });
+      if (response?.errors && response.errors.length > 0) {
+        throw new Error(response.errors[0].message);
       }
+      if (response.data?.createDeal) {
+        await refetch();
+        return response.data.createDeal;
+      }
+      throw new Error('No data returned from server');
     },
     [createDealMutation, refetch]
   );
@@ -43,10 +45,19 @@ export const useDeals = () => {
   const update = useCallback(
     async (id: string, input: DealInput) => {
       try {
-        const { data: result } = await updateDealMutation({ variables: { id, input } });
-        await refetch();
-        return result.updateDeal;
-      } catch (err) {
+        const response = await updateDealMutation({ variables: { id, input } });
+        if (response?.errors && response.errors.length > 0) {
+          throw new Error(response.errors[0].message);
+        }
+        if (response.data?.updateDeal) {
+          await refetch();
+          return response.data.updateDeal;
+        }
+        throw new Error('No data returned from server');
+      } catch (err: any) {
+        if (err?.graphQLErrors?.length > 0) {
+          throw new Error(err.graphQLErrors[0].message);
+        }
         throw err;
       }
     },
@@ -56,9 +67,19 @@ export const useDeals = () => {
   const delete_ = useCallback(
     async (id: string) => {
       try {
-        await deleteDealMutation({ variables: { id } });
-        await refetch();
-      } catch (err) {
+        const response = await deleteDealMutation({ variables: { id } });
+        if (response?.errors && response.errors.length > 0) {
+          throw new Error(response.errors[0].message);
+        }
+        if (response.data?.deleteDeal) {
+          await refetch();
+          return response.data.deleteDeal;
+        }
+        throw new Error('No data returned from server');
+      } catch (err: any) {
+        if (err?.graphQLErrors?.length > 0) {
+          throw new Error(err.graphQLErrors[0].message);
+        }
         throw err;
       }
     },

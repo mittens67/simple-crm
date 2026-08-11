@@ -16,26 +16,28 @@ export const useCustomers = () => {
   });
 
   const [createCustomerMutation] = useMutation(CREATE_CUSTOMER_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [updateCustomerMutation] = useMutation(UPDATE_CUSTOMER_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [deleteCustomerMutation] = useMutation(DELETE_CUSTOMER_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const create = useCallback(
     async (input: CustomerInput) => {
-      try {
-        const { data: result } = await createCustomerMutation({ variables: { input } });
-        await refetch();
-        return result.createCustomer;
-      } catch (err) {
-        throw err;
+      const response = await createCustomerMutation({ variables: { input } });
+      if (response?.errors && response.errors.length > 0) {
+        throw new Error(response.errors[0].message);
       }
+      if (response.data?.createCustomer) {
+        await refetch();
+        return response.data.createCustomer;
+      }
+      throw new Error('No data returned from server');
     },
     [createCustomerMutation, refetch]
   );
@@ -43,10 +45,19 @@ export const useCustomers = () => {
   const update = useCallback(
     async (id: string, input: CustomerInput) => {
       try {
-        const { data: result } = await updateCustomerMutation({ variables: { id, input } });
-        await refetch();
-        return result.updateCustomer;
-      } catch (err) {
+        const response = await updateCustomerMutation({ variables: { id, input } });
+        if (response?.errors && response.errors.length > 0) {
+          throw new Error(response.errors[0].message);
+        }
+        if (response.data?.updateCustomer) {
+          await refetch();
+          return response.data.updateCustomer;
+        }
+        throw new Error('No data returned from server');
+      } catch (err: any) {
+        if (err?.graphQLErrors?.length > 0) {
+          throw new Error(err.graphQLErrors[0].message);
+        }
         throw err;
       }
     },
@@ -56,9 +67,19 @@ export const useCustomers = () => {
   const delete_ = useCallback(
     async (id: string) => {
       try {
-        await deleteCustomerMutation({ variables: { id } });
-        await refetch();
-      } catch (err) {
+        const response = await deleteCustomerMutation({ variables: { id } });
+        if (response?.errors && response.errors.length > 0) {
+          throw new Error(response.errors[0].message);
+        }
+        if (response.data?.deleteCustomer) {
+          await refetch();
+          return response.data.deleteCustomer;
+        }
+        throw new Error('No data returned from server');
+      } catch (err: any) {
+        if (err?.graphQLErrors?.length > 0) {
+          throw new Error(err.graphQLErrors[0].message);
+        }
         throw err;
       }
     },

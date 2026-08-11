@@ -1,108 +1,63 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '../../../../auth/auth-context';
+import { useLeads, useUsers } from '../../../../hooks';
+import type { Lead } from '../../../../types/lead';
+import type { LeadInput } from './lead-modal';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
-import {
-  LEADS_QUERY,
-  CREATE_LEAD_MUTATION,
-  UPDATE_LEAD_MUTATION,
-  DELETE_LEAD_MUTATION,
-  USERS_QUERY,
-  CUSTOMERS_QUERY,
-} from '../../../../lib/graphql-queries';
 import LeadModal from './lead-modal';
 import LeadView from './lead-view';
-import type { LeadInput } from './lead-modal';
 import './leads.scss';
-
-interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: string;
-  assigned_rep?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  customer?: {
-    id: string;
-    name: string;
-  };
-  sales_notes?: string;
-  archive_notes?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
 
 const Leads = () => {
   const { can } = useAuth();
+  const { leads, total, loading, create, update, delete: deleteLead, setSearch, setOffset, offset, limit, setError: setLeads_error } = useLeads();
+  const { users } = useUsers();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<Lead | null>(null);
   const [viewing, set_viewing] = useState<Lead | null>(null);
   const [search_input, set_search_input] = useState('');
-  const [search_query, set_search_query] = useState('');
-  const [limit] = useState(20);
-  const [offset, set_offset] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      set_search_query(search_input);
-      set_offset(0);
+      setSearch(search_input);
+      setOffset(0);
     }, 300);
     return () => clearTimeout(timer);
-  }, [search_input]);
-
-  const { data: leads_data, loading: leads_loading, refetch: refetch_leads } = useQuery(LEADS_QUERY, {
-    variables: { search: search_query || undefined, limit, offset },
-  });
-  const { data: users_data } = useQuery(USERS_QUERY);
-
-  const [create_lead] = useMutation(CREATE_LEAD_MUTATION, {
-    onCompleted: () => {
-      refetch_leads();
-      set_modal_open(false);
-    },
-    onError: (error) => {
-      console.error('Create lead error:', error.message);
-      alert(`Error creating lead: ${error.message}`);
-    },
-  });
-
-  const [update_lead] = useMutation(UPDATE_LEAD_MUTATION, {
-    refetchQueries: [{ query: CUSTOMERS_QUERY }],
-    onCompleted: () => {
-      refetch_leads();
-      set_modal_open(false);
-      set_editing(null);
-    },
-  });
-
-  const [delete_lead] = useMutation(DELETE_LEAD_MUTATION, {
-    onCompleted: () => {
-      refetch_leads();
-    },
-  });
+  }, [search_input, setSearch, setOffset]);
 
   const handle_create = async (input: LeadInput) => {
-    await create_lead({ variables: { input } });
+    try {
+      await create(input as any);
+      set_modal_open(false);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to create lead';
+      setLeads_error(error_msg);
+      alert(`Error creating lead: ${error_msg}`);
+    }
   };
 
   const handle_update = async (input: LeadInput) => {
     if (!editing) return;
-    await update_lead({ variables: { id: editing.id, input } });
+    try {
+      await update(editing.id, input as any);
+      set_modal_open(false);
+      set_editing(null);
+    } catch (err) {
+      const error_msg = err instanceof Error ? err.message : 'Failed to update lead';
+      setLeads_error(error_msg);
+      alert(`Error updating lead: ${error_msg}`);
+    }
   };
 
   const handle_delete = async (id: string) => {
     if (window.confirm('Are you sure?')) {
-      await delete_lead({ variables: { id } });
+      try {
+        await deleteLead(id);
+      } catch (err) {
+        const error_msg = err instanceof Error ? err.message : 'Failed to delete lead';
+        setLeads_error(error_msg);
+        alert(`Error deleting lead: ${error_msg}`);
+      }
     }
   };
 
@@ -122,12 +77,9 @@ const Leads = () => {
     set_viewing(null);
   };
 
-  const leads = leads_data?.leads?.data || [];
-  const total = leads_data?.leads?.total || 0;
   const max_pages = Math.ceil(total / limit);
-  const users: User[] = users_data?.users || [];
 
-  if (leads_loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="leads">
@@ -146,6 +98,7 @@ const Leads = () => {
           placeholder="Search leads by name, email, or phone..."
           value={search_input}
           onChange={(e) => set_search_input(e.target.value)}
+          disabled={loading}
         />
       </div>
 
@@ -199,7 +152,7 @@ const Leads = () => {
       <div className="pagination-controls" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
           className="btn-secondary"
-          onClick={() => set_offset(Math.max(0, offset - limit))}
+          onClick={() => setOffset(Math.max(0, offset - limit))}
           disabled={offset === 0}
         >
           ← Previous
@@ -209,7 +162,7 @@ const Leads = () => {
         </span>
         <button
           className="btn-secondary"
-          onClick={() => set_offset(offset + limit)}
+          onClick={() => setOffset(offset + limit)}
           disabled={offset + limit >= total}
         >
           Next →

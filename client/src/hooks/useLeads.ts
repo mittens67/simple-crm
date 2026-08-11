@@ -26,51 +26,58 @@ export const useLeads = (options: UseLeadsOptions = {}) => {
   });
 
   const [createLeadMutation] = useMutation(CREATE_LEAD_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [updateLeadMutation] = useMutation(UPDATE_LEAD_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [deleteLeadMutation] = useMutation(DELETE_LEAD_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const create = useCallback(
     async (input: LeadInput) => {
-      try {
-        const { data: result } = await createLeadMutation({ variables: { input } });
-        await refetch();
-        return result.createLead;
-      } catch (err) {
-        throw err;
+      const response = await createLeadMutation({ variables: { input } });
+      if (response?.errors && response.errors.length > 0) {
+        throw new Error(response.errors[0].message);
       }
+      if (response.data?.createLead) {
+        await refetch();
+        return response.data.createLead;
+      }
+      throw new Error('No data returned from server');
     },
     [createLeadMutation, refetch]
   );
 
   const update = useCallback(
     async (id: string, input: LeadInput) => {
-      try {
-        const { data: result } = await updateLeadMutation({ variables: { id, input } });
-        await refetch();
-        return result.updateLead;
-      } catch (err) {
-        throw err;
+      const response = await updateLeadMutation({ variables: { id, input } });
+      if (response?.errors && response.errors.length > 0) {
+        throw new Error(response.errors[0].message);
       }
+      if (response.data?.updateLead) {
+        await refetch();
+        return response.data.updateLead;
+      }
+      throw new Error('No data returned from server');
     },
     [updateLeadMutation, refetch]
   );
 
   const delete_ = useCallback(
     async (id: string) => {
-      try {
-        await deleteLeadMutation({ variables: { id } });
-        await refetch();
-      } catch (err) {
-        throw err;
+      const response = await deleteLeadMutation({ variables: { id } });
+      if (response?.errors && response.errors.length > 0) {
+        throw new Error(response.errors[0].message);
       }
+      if (response.data?.deleteLead) {
+        await refetch();
+        return response.data.deleteLead;
+      }
+      throw new Error('No data returned from server');
     },
     [deleteLeadMutation, refetch]
   );

@@ -16,26 +16,28 @@ export const useSupportTickets = () => {
   });
 
   const [createTicketMutation] = useMutation(CREATE_SUPPORT_TICKET_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [updateTicketMutation] = useMutation(UPDATE_SUPPORT_TICKET_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const [deleteTicketMutation] = useMutation(DELETE_SUPPORT_TICKET_MUTATION, {
-    onError: (err) => setError(err.message),
+    errorPolicy: 'all',
   });
 
   const create = useCallback(
     async (input: SupportTicketInput) => {
-      try {
-        const { data: result } = await createTicketMutation({ variables: { input } });
-        await refetch();
-        return result.createSupportTicket;
-      } catch (err) {
-        throw err;
+      const response = await createTicketMutation({ variables: { input } });
+      if (response?.errors && response.errors.length > 0) {
+        throw new Error(response.errors[0].message);
       }
+      if (response.data?.createSupportTicket) {
+        await refetch();
+        return response.data.createSupportTicket;
+      }
+      throw new Error('No data returned from server');
     },
     [createTicketMutation, refetch]
   );
@@ -43,10 +45,19 @@ export const useSupportTickets = () => {
   const update = useCallback(
     async (id: string, input: SupportTicketInput) => {
       try {
-        const { data: result } = await updateTicketMutation({ variables: { id, input } });
-        await refetch();
-        return result.updateSupportTicket;
-      } catch (err) {
+        const response = await updateTicketMutation({ variables: { id, input } });
+        if (response?.errors && response.errors.length > 0) {
+          throw new Error(response.errors[0].message);
+        }
+        if (response.data?.updateSupportTicket) {
+          await refetch();
+          return response.data.updateSupportTicket;
+        }
+        throw new Error('No data returned from server');
+      } catch (err: any) {
+        if (err?.graphQLErrors?.length > 0) {
+          throw new Error(err.graphQLErrors[0].message);
+        }
         throw err;
       }
     },
@@ -56,9 +67,19 @@ export const useSupportTickets = () => {
   const delete_ = useCallback(
     async (id: string) => {
       try {
-        await deleteTicketMutation({ variables: { id } });
-        await refetch();
-      } catch (err) {
+        const response = await deleteTicketMutation({ variables: { id } });
+        if (response?.errors && response.errors.length > 0) {
+          throw new Error(response.errors[0].message);
+        }
+        if (response.data?.deleteSupportTicket) {
+          await refetch();
+          return response.data.deleteSupportTicket;
+        }
+        throw new Error('No data returned from server');
+      } catch (err: any) {
+        if (err?.graphQLErrors?.length > 0) {
+          throw new Error(err.graphQLErrors[0].message);
+        }
         throw err;
       }
     },
