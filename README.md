@@ -440,10 +440,25 @@ Granular, action-level permissions:
 
 ### Running Tests
 
+The frontend uses **Vitest** with **React Testing Library** for unit and component testing.
+
 ```bash
 cd client
-pnpm test
+
+# Run tests in watch mode (development)
+npm run test
+
+# Run tests once (CI mode)
+npm run test -- --run
+
+# Run tests with UI dashboard
+npm run test:ui
+
+# Generate coverage report
+npm run test:coverage
 ```
+
+Tests are located alongside components with `.test.tsx` suffix. For more details on writing tests, see [client/TESTING.md](client/TESTING.md).
 
 ### Linting
 
