@@ -134,6 +134,17 @@
   }
 }
 
+// Better contrast in light mode
+:root[data-theme='light'] .btn-secondary {
+  background-color: #d1d5db;
+  color: #1f2937;
+  border-color: #9ca3af;
+
+  &:hover:not(:disabled) {
+    background-color: #9ca3af;
+  }
+}
+
 .btn-danger {
   background-color: #dc2626;
   color: white;

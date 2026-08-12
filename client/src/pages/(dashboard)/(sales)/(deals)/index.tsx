@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useDeals, useCustomers, useUsers } from '../../../../hooks';
+import { useDialog } from '../../../../components/dialogs/DialogProvider';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
 import DealModal from './deal-modal';
 import '../(leads)/leads.scss';
@@ -10,6 +11,7 @@ const Deals = () => {
   const { deals, loading, create, update, delete: deleteDeal, setError: setDeals_error } = useDeals();
   const { customers } = useCustomers();
   const { users } = useUsers();
+  const { showAlert, showConfirm } = useDialog();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<any>(null);
   const [search_input, set_search_input] = useState('');
@@ -26,7 +28,7 @@ const Deals = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create deal';
       setDeals_error(error_msg);
-      alert(`Error creating deal: ${error_msg}`);
+      await showAlert('Error', `Error creating deal: ${error_msg}`);
     }
   };
 
@@ -39,18 +41,24 @@ const Deals = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to update deal';
       setDeals_error(error_msg);
-      alert(`Error updating deal: ${error_msg}`);
+      await showAlert('Error', `Error updating deal: ${error_msg}`);
     }
   };
 
   const handle_delete = async (id: string) => {
-    if (window.confirm('Are you sure?')) {
+    const confirmed = await showConfirm({
+      title: 'Delete Deal',
+      message: 'Are you sure you want to delete this deal?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
       try {
         await deleteDeal(id);
       } catch (err) {
         const error_msg = err instanceof Error ? err.message : 'Failed to delete deal';
         setDeals_error(error_msg);
-        alert(`Error deleting deal: ${error_msg}`);
+        await showAlert('Error', `Error deleting deal: ${error_msg}`);
       }
     }
   };

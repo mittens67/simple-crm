@@ -6,6 +6,7 @@ import App from './App.tsx'
 import { apollo_client } from './lib/apollo.ts'
 import { AuthProvider } from './auth/auth-context'
 import { ThemeProvider } from './theme/theme-provider'
+import { DialogProvider } from './components/dialogs/DialogProvider'
 
 // Initialize theme before React renders to prevent FOUC (flash of unstyled content)
 const initializeTheme = () => {
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')!).render(
     <ApolloProvider client={apollo_client}>
       <AuthProvider>
         <ThemeProvider>
-          <App />
+          <DialogProvider>
+            <App />
+          </DialogProvider>
         </ThemeProvider>
       </AuthProvider>
     </ApolloProvider>

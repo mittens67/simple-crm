@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useLeads, useUsers } from '../../../../hooks';
+import { useDialog } from '../../../../components/dialogs/DialogProvider';
 import type { Lead } from '../../../../types/lead';
 import type { LeadInput } from './lead-modal';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
@@ -12,6 +13,7 @@ const Leads = () => {
   const { can } = useAuth();
   const { leads, total, loading, create, update, delete: deleteLead, setSearch, setOffset, offset, limit, setError: setLeads_error } = useLeads();
   const { users } = useUsers();
+  const { showAlert, showConfirm } = useDialog();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<Lead | null>(null);
   const [viewing, set_viewing] = useState<Lead | null>(null);
@@ -32,7 +34,7 @@ const Leads = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create lead';
       setLeads_error(error_msg);
-      alert(`Error creating lead: ${error_msg}`);
+      await showAlert('Error', `Error creating lead: ${error_msg}`);
     }
   };
 
@@ -45,18 +47,24 @@ const Leads = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to update lead';
       setLeads_error(error_msg);
-      alert(`Error updating lead: ${error_msg}`);
+      await showAlert('Error', `Error updating lead: ${error_msg}`);
     }
   };
 
   const handle_delete = async (id: string) => {
-    if (window.confirm('Are you sure?')) {
+    const confirmed = await showConfirm({
+      title: 'Delete Lead',
+      message: 'Are you sure you want to delete this lead?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
       try {
         await deleteLead(id);
       } catch (err) {
         const error_msg = err instanceof Error ? err.message : 'Failed to delete lead';
         setLeads_error(error_msg);
-        alert(`Error deleting lead: ${error_msg}`);
+        await showAlert('Error', `Error deleting lead: ${error_msg}`);
       }
     }
   };

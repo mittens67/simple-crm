@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useCustomers, useUsers } from '../../../../hooks';
+import { useDialog } from '../../../../components/dialogs/DialogProvider';
 import type { Customer } from '../../../../types/customer';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
 import CustomerModal from './customer-modal';
@@ -10,6 +11,7 @@ const Customers = () => {
   const { can } = useAuth();
   const { customers, loading, create, update, delete: deleteCustomer, setError: setCustomers_error } = useCustomers();
   const { users } = useUsers();
+  const { showAlert, showConfirm } = useDialog();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<Customer | null>(null);
   const [search_input, set_search_input] = useState('');
@@ -26,7 +28,7 @@ const Customers = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create customer';
       setCustomers_error(error_msg);
-      alert(`Error creating customer: ${error_msg}`);
+      await showAlert('Error', `Error creating customer: ${error_msg}`);
     }
   };
 
@@ -39,18 +41,24 @@ const Customers = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to update customer';
       setCustomers_error(error_msg);
-      alert(`Error updating customer: ${error_msg}`);
+      await showAlert('Error', `Error updating customer: ${error_msg}`);
     }
   };
 
   const handle_delete = async (id: string) => {
-    if (window.confirm('Are you sure?')) {
+    const confirmed = await showConfirm({
+      title: 'Delete Customer',
+      message: 'Are you sure you want to delete this customer?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
       try {
         await deleteCustomer(id);
       } catch (err) {
         const error_msg = err instanceof Error ? err.message : 'Failed to delete customer';
         setCustomers_error(error_msg);
-        alert(`Error deleting customer: ${error_msg}`);
+        await showAlert('Error', `Error deleting customer: ${error_msg}`);
       }
     }
   };

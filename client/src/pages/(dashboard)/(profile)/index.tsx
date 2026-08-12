@@ -1,11 +1,13 @@
 import { useAuth } from '../../../auth/auth-context';
 import { useTheme } from '../../../theme/use-theme';
+import { useDialog } from '../../../components/dialogs/DialogProvider';
 import LoadingSpinner from '../../../components/ui/loading-spinner';
 import './profile.scss';
 
 const Profile = () => {
   const { user, current_role_index, switch_role, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { showConfirm } = useDialog();
 
   if (!user) {
     return <LoadingSpinner />;
@@ -19,7 +21,13 @@ const Profile = () => {
     .sort();
 
   const handle_logout = async () => {
-    if (window.confirm('Are you sure you want to log out?')) {
+    const confirmed = await showConfirm({
+      title: 'Log Out',
+      message: 'Are you sure you want to log out?',
+      confirmText: 'Log Out',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
       await logout();
     }
   };

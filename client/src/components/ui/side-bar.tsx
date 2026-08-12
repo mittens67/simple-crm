@@ -1,11 +1,13 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/auth-context";
+import { useDialog } from "../dialogs/DialogProvider";
 import Logo from "./logo";
 import "./side-bar.scss";
 
 const SideBar = () => {
   const { user, logout, current_role_index, switch_role, can } = useAuth();
   const navigate = useNavigate();
+  const { showConfirm } = useDialog();
 
   const get_initials = (name: string) => {
     return name
@@ -17,8 +19,16 @@ const SideBar = () => {
   };
 
   const handle_logout = async () => {
-    await logout();
-    navigate("/login", { replace: true });
+    const confirmed = await showConfirm({
+      title: 'Log Out',
+      message: 'Are you sure you want to log out?',
+      confirmText: 'Log Out',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
+      await logout();
+      navigate("/login", { replace: true });
+    }
   };
 
   return (

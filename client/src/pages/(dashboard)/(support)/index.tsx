@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../auth/auth-context';
 import { useSupportTickets, useCustomers, useUsers } from '../../../hooks';
+import { useDialog } from '../../../components/dialogs/DialogProvider';
 import LoadingSpinner from '../../../components/ui/loading-spinner';
 import SupportTicketModal from './support-ticket-modal';
 import '../(sales)/(leads)/leads.scss';
@@ -10,6 +11,7 @@ const Support = () => {
   const { tickets, loading, create, update, delete: deleteTicket, setError: setTickets_error } = useSupportTickets();
   const { customers } = useCustomers();
   const { users } = useUsers();
+  const { showAlert, showConfirm } = useDialog();
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<any>(null);
   const [search_input, set_search_input] = useState('');
@@ -26,7 +28,7 @@ const Support = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create ticket';
       setTickets_error(error_msg);
-      alert(`Error creating ticket: ${error_msg}`);
+      await showAlert('Error', `Error creating ticket: ${error_msg}`);
     }
   };
 
@@ -39,18 +41,24 @@ const Support = () => {
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to update ticket';
       setTickets_error(error_msg);
-      alert(`Error updating ticket: ${error_msg}`);
+      await showAlert('Error', `Error updating ticket: ${error_msg}`);
     }
   };
 
   const handle_delete = async (id: string) => {
-    if (window.confirm('Are you sure?')) {
+    const confirmed = await showConfirm({
+      title: 'Delete Ticket',
+      message: 'Are you sure you want to delete this ticket?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
       try {
         await deleteTicket(id);
       } catch (err) {
         const error_msg = err instanceof Error ? err.message : 'Failed to delete ticket';
         setTickets_error(error_msg);
-        alert(`Error deleting ticket: ${error_msg}`);
+        await showAlert('Error', `Error deleting ticket: ${error_msg}`);
       }
     }
   };
