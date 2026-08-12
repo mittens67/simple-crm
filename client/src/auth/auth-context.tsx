@@ -34,18 +34,40 @@ const LOGOUT = gql`
 
 type Status = 'loading' | 'authenticated' | 'unauthenticated';
 
+/**
+ * Authentication context value exposed via useAuth hook.
+ */
 interface AuthContextValue {
+  /** Currently authenticated user, null if unauthenticated */
   user: AuthUser | null;
+  /** Auth status: 'loading', 'authenticated', or 'unauthenticated' */
   status: Status;
+  /** Index of the currently selected role in user.roles array */
   current_role_index: number;
+  /** Login with email and password. Updates access token and user state. */
   login: (email: string, password: string) => Promise<void>;
+  /** Logout and clear auth state. Must be called before navigating to login. */
   logout: () => Promise<void>;
+  /** Switch to a different user role by index. Updates current_role_id in session. */
   switch_role: (role_index: number) => void;
+  /** Check if current role has a permission using wildcard logic (exact, resource.*, or *) */
   can: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * AuthProvider wraps the app to provide authentication state and methods.
+ * Automatically attempts silent refresh on mount to restore session.
+ * Must wrap all pages that need auth or permission checks.
+ *
+ * Usage:
+ * ```tsx
+ * <AuthProvider>
+ *   <App />
+ * </AuthProvider>
+ * ```
+ */
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const client = useApolloClient();
   const [user, set_user] = useState<AuthUser | null>(null);
@@ -128,12 +150,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+/**
+ * Access authentication state and methods. Must be called inside AuthProvider.
+ *
+ * Returns: { user, status, login, logout, switch_role, can, current_role_index }
+ *
+ * Example:
+ * ```tsx
+ * const { user, can, logout } = useAuth();
+ * if (user) console.log(user.email);
+ * if (can('leads.delete')) showDeleteButton();
+ * ```
+ *
+ * Throws: Error if used outside AuthProvider
+ */
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 };
 
+/**
+ * Convenience hook to check a single permission without accessing full auth state.
+ * Equivalent to `const { can } = useAuth(); can(permission)` but more concise.
+ *
+ * @param permission - Permission string to check (e.g. 'leads.read', 'deals.*')
+ * @returns true if current role has the permission, false otherwise
+ *
+ * Example:
+ * ```tsx
+ * if (useCan('leads.delete')) {
+ *   return <button onClick={delete}>Delete</button>;
+ * }
+ * ```
+ */
 export const useCan = (permission: string): boolean => {
   const { can } = useAuth();
   return can(permission);

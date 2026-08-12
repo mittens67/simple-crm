@@ -14,15 +14,34 @@ interface DialogState {
   onCancel?: () => void;
 }
 
+/**
+ * Dialog context value exposed via useDialog hook.
+ */
 interface DialogContextType {
+  /** Show a confirmation dialog that returns true/false on user action */
   showConfirm: (opts: Omit<DialogState, 'type' | 'isOpen'>) => Promise<boolean>;
+  /** Show an alert dialog with a single OK button */
   showAlert: (title: string, message: string) => Promise<void>;
+  /** Close any open dialog */
   close: () => void;
+  /** Current dialog state (for advanced use cases) */
   state: DialogState;
 }
 
 const DialogContext = createContext<DialogContextType | null>(null);
 
+/**
+ * DialogProvider wraps the app to provide modal dialog functionality.
+ * Replaces window.alert() and window.confirm() with accessible modal components.
+ * Must wrap the component tree before useDialog can be called.
+ *
+ * Usage:
+ * ```tsx
+ * <DialogProvider>
+ *   <App />
+ * </DialogProvider>
+ * ```
+ */
 export const DialogProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<DialogState>({
     isOpen: false,
@@ -99,6 +118,30 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+/**
+ * Access modal dialog functions. Must be called inside DialogProvider.
+ *
+ * Returns: { showAlert, showConfirm, close, state }
+ *
+ * Example:
+ * ```tsx
+ * const { showAlert, showConfirm } = useDialog();
+ *
+ * // Alert
+ * await showAlert('Error', 'Something went wrong');
+ *
+ * // Confirm (returns true if user clicks confirm, false if cancels)
+ * const confirmed = await showConfirm({
+ *   title: 'Delete Item',
+ *   message: 'Are you sure?',
+ *   confirmText: 'Delete',
+ *   cancelText: 'Cancel',
+ * });
+ * if (confirmed) { await deleteItem(); }
+ * ```
+ *
+ * Throws: Error if used outside DialogProvider
+ */
 export const useDialog = () => {
   const context = useContext(DialogContext);
   if (!context) throw new Error('useDialog must be used inside DialogProvider');
