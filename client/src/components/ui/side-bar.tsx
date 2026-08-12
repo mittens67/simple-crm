@@ -4,7 +4,7 @@ import Logo from "./logo";
 import "./side-bar.scss";
 
 const SideBar = () => {
-  const { user, logout, current_role_index, switch_role } = useAuth();
+  const { user, logout, current_role_index, switch_role, can } = useAuth();
   const navigate = useNavigate();
 
   const get_initials = (name: string) => {
@@ -57,30 +57,42 @@ const SideBar = () => {
         <NavLink to="/" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
           <p>Home</p>
         </NavLink>
-        <NavLink to="/leads" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
-          <p>Leads</p>
-        </NavLink>
-        <NavLink to="/customers" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
-          <p>Customers</p>
-        </NavLink>
-        <NavLink to="/deals" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
-          <p>Deals</p>
-        </NavLink>
-        <NavLink to="/support" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
-          <p>Support</p>
-        </NavLink>
-        {(user?.roles.some((r) => r.name === 'Admin')) && (
+        {can('leads.read') && (
+          <NavLink to="/leads" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
+            <p>Leads</p>
+          </NavLink>
+        )}
+        {can('customers.read') && (
+          <NavLink to="/customers" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
+            <p>Customers</p>
+          </NavLink>
+        )}
+        {can('deals.read') && (
+          <NavLink to="/deals" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
+            <p>Deals</p>
+          </NavLink>
+        )}
+        {can('support_tickets.read') && (
+          <NavLink to="/support" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
+            <p>Support</p>
+          </NavLink>
+        )}
+        {(can('roles.read') || can('users.read')) && (
           <>
             <div style={{ marginTop: '1rem', borderTop: '1px solid var(--sidebar-border)', paddingTop: '1rem' }}>
               <p style={{ margin: '0 1rem 0.75rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-tertiary)' }}>
                 Admin
               </p>
-              <NavLink to="/admin/roles" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
-                <p>Roles</p>
-              </NavLink>
-              <NavLink to="/admin/users" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
-                <p>Users</p>
-              </NavLink>
+              {can('roles.read') && (
+                <NavLink to="/admin/roles" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
+                  <p>Roles</p>
+                </NavLink>
+              )}
+              {can('users.read') && (
+                <NavLink to="/admin/users" className={({ isActive }) => isActive ? "sidebar-nav-link active" : "sidebar-nav-link"}>
+                  <p>Users</p>
+                </NavLink>
+              )}
             </div>
           </>
         )}
