@@ -1,22 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { lead_repository } from '../../repositories/lead';
 import Lead from '../../models/lead';
 
-let mongoServer: MongoMemoryServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
+// MongoDB setup is handled by src/__tests__/setup.ts (wired in vitest.config.ts)
 
 beforeEach(async () => {
   await Lead.deleteMany({});

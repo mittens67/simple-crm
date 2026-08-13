@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose, { Types } from 'mongoose';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { Types } from 'mongoose';
 import { lead_service } from '../../services/lead';
 import { lead_repository } from '../../repositories/lead';
 import Lead from '../../models/lead';
@@ -9,24 +8,16 @@ import User from '../../models/user';
 import Role from '../../models/role';
 import ActivityLog from '../../models/activity-log';
 import { ValidationError, NotFoundError } from '../../utils/errors';
+import { mock_context } from '../helpers/context';
 
-let mongoServer: MongoMemoryServer;
+// MongoDB setup is handled by src/__tests__/setup.ts (wired in vitest.config.ts)
+
 let test_user: any;
 let test_admin: any;
 let sales_role: any;
 let admin_role: any;
 
-const mock_context = (user: any, role: any = null) => ({
-  user,
-  user_id: user._id,
-  role,
-  auth_retried: false,
-} as any);
-
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
-
   // Create roles with permissions (Record<string, boolean>)
   sales_role = await Role.create({
     name: 'Sales',
@@ -61,13 +52,6 @@ beforeAll(async () => {
     password: 'password123',
     role_ids: [admin_role._id],
   });
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
 });
 
 beforeEach(async () => {
