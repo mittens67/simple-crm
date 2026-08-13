@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
     "seed": "ts-node-dev --transpile-only src/scripts/seed.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest",
