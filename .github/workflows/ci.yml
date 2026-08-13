@@ -60,3 +60,54 @@ jobs:
 
       - name: Test
         run: pnpm --dir server test -- --run
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: |
+            client/pnpm-lock.yaml
+            server/pnpm-lock.yaml
+
+      - name: Install client dependencies
+        run: pnpm --dir client install --frozen-lockfile
+
+      - name: Install server dependencies
+        run: pnpm --dir server install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --dir client exec playwright install --with-deps
+
+      - name: Seed database
+        run: pnpm --dir server seed
+        env:
+          MONGO_URI: mongodb://localhost:27017/crm_test
+          ADMIN_EMAIL: admin@test.com
+          ADMIN_PASSWORD: AdminTest123
+
+      - name: Run E2E tests
+        run: pnpm --dir client e2e
+        env:
+          MONGO_URI: mongodb://localhost:27017/crm_test
+          JWT_ACCESS_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+          PORT: 4000
+          CLIENT_PORT: 5173
