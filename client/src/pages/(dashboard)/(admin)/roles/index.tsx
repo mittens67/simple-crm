@@ -175,7 +175,7 @@ const Roles = () => {
               <td>{role.name}</td>
               <td>
                 {Object.entries(role.permissions || {})
-                  .filter(([_, v]) => v)
+                  .filter(([, v]) => v)
                   .map(([k]) => k)
                   .join(', ') || '—'}
               </td>

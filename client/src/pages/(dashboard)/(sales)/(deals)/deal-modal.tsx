@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { DealInput } from '../../../../types/deal';
 
 interface Deal {
   id: string;
@@ -30,7 +31,7 @@ interface DealModalProps {
   deal: Deal | null;
   customers: Customer[];
   users: User[];
-  on_save: (input: any) => void;
+  on_save: (input: DealInput) => void;
   on_close: () => void;
 }
 
@@ -74,14 +75,14 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
     };
 
     if (deal) {
-      const partial_input: any = {};
+      const partial_input: Partial<DealInput> = {};
       if (form_data.title) partial_input.title = form_data.title;
       if (form_data.customer_id) partial_input.customer_id = form_data.customer_id;
-      if (form_data.owner_id) partial_input.owner_id = form_data.owner_id;
-      if (form_data.value) partial_input.value = parseFloat(form_data.value);
-      if (form_data.status) partial_input.status = form_data.status;
-      if (form_data.stage) partial_input.stage = form_data.stage;
-      on_save(partial_input);
+      if (form_data.owner_id) partial_input.assigned_rep_id = form_data.owner_id;
+      if (form_data.value) partial_input.amount = parseFloat(form_data.value);
+      if (form_data.status) partial_input.status = form_data.status as DealInput['status'];
+      if (form_data.stage) partial_input.notes = form_data.stage;
+      on_save(partial_input as DealInput);
     } else {
       on_save(input);
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { CustomerInput } from '../../../../types/customer';
 
 interface Customer {
   id: string;
@@ -20,7 +21,7 @@ interface User {
 interface CustomerModalProps {
   customer: Customer | null;
   users: User[];
-  on_save: (input: any) => void;
+  on_save: (input: CustomerInput) => void;
   on_close: () => void;
 }
 

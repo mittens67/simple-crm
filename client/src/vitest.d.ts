@@ -2,8 +2,8 @@ import '@testing-library/jest-dom';
 
 declare global {
   namespace Vi {
-    interface Assertion<T = void> extends CustomMatchers<T> {}
-    interface AsymmetricMatchersContaining extends CustomMatchers<void> {}
+    type Assertion<T = void> = CustomMatchers<T>;
+    type AsymmetricMatchersContaining = CustomMatchers<void>;
   }
 }
 

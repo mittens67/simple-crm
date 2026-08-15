@@ -29,7 +29,7 @@ const Leads = () => {
 
   const handle_create = async (input: LeadInput) => {
     try {
-      await create(input as any);
+      await create(input);
       set_modal_open(false);
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create lead';
@@ -41,7 +41,7 @@ const Leads = () => {
   const handle_update = async (input: LeadInput) => {
     if (!editing) return;
     try {
-      await update(editing.id, input as any);
+      await update(editing.id, input);
       set_modal_open(false);
       set_editing(null);
     } catch (err) {

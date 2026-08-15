@@ -23,21 +23,45 @@ interface RecentItem {
   timestamp: string;
 }
 
+interface Deal {
+  value: number;
+  status: string;
+}
+
+interface Ticket {
+  status: string;
+}
+
+interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  status: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+}
+
 const Home = () => {
   const { data: leads_data } = useQuery(LEADS_QUERY);
   const { data: customers_data } = useQuery(CUSTOMERS_QUERY);
   const { data: deals_data } = useQuery(DEALS_QUERY);
   const { data: tickets_data } = useQuery(SUPPORT_TICKETS_QUERY);
 
-  const leads = leads_data?.leads?.data || [];
-  const customers = customers_data?.customers || [];
-  const deals = deals_data?.deals || [];
-  const tickets = tickets_data?.supportTickets || [];
+  const leads = (leads_data?.leads?.data || []) as Lead[];
+  const customers = (customers_data?.customers || []) as Customer[];
+  const deals = (deals_data?.deals || []) as Deal[];
+  const tickets = (tickets_data?.supportTickets || []) as Ticket[];
 
-  const total_deal_value = deals.reduce((sum: number, deal: any) => sum + deal.value, 0);
-  const open_tickets = tickets.filter((t: any) => t.status === 'Open').length;
-  const won_deals = deals.filter((d: any) => d.status === 'Won').length;
-  const qualified_leads = leads.filter((l: any) => l.status === 'Qualified').length;
+  const total_deal_value = deals.reduce((sum: number, deal) => sum + deal.value, 0);
+  const open_tickets = tickets.filter((t) => t.status === 'Open').length;
+  const won_deals = deals.filter((d) => d.status === 'Won').length;
+  const qualified_leads = leads.filter((l) => l.status === 'Qualified').length;
 
   const stats: Card[] = [
     {
@@ -68,14 +92,14 @@ const Home = () => {
   ];
 
   const recent_items: RecentItem[] = [
-    ...leads.slice(0, 2).map((lead: any) => ({
+    ...leads.slice(0, 2).map((lead) => ({
       id: lead.id,
       title: lead.name,
       subtitle: lead.email,
       type: 'lead',
       timestamp: lead.created_at,
     })),
-    ...customers.slice(0, 2).map((customer: any) => ({
+    ...customers.slice(0, 2).map((customer) => ({
       id: customer.id,
       title: customer.name,
       subtitle: customer.email,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { SupportTicketInput } from '../../../../types/support-ticket';
 
 interface SupportTicket {
   id: string;
@@ -29,7 +30,7 @@ interface SupportTicketModalProps {
   ticket: SupportTicket | null;
   customers: Customer[];
   users: User[];
-  on_save: (input: any) => void;
+  on_save: (input: SupportTicketInput) => void;
   on_close: () => void;
 }
 
@@ -69,15 +70,15 @@ const SupportTicketModal = ({
     e.preventDefault();
 
     if (ticket) {
-      const partial_input: any = {};
+      const partial_input: Partial<SupportTicketInput> = {};
       if (form_data.status) partial_input.status = form_data.status;
       if (form_data.internal_notes !== undefined) partial_input.internal_notes = form_data.internal_notes;
-      if (form_data.assigned_agent !== undefined) partial_input.assigned_agent = form_data.assigned_agent || null;
-      on_save(partial_input);
+      if (form_data.assigned_agent !== undefined) partial_input.assigned_agent_id = form_data.assigned_agent || null;
+      on_save(partial_input as SupportTicketInput);
     } else {
       on_save({
         customer_id: form_data.customer_id,
-        assigned_agent: form_data.assigned_agent || null,
+        assigned_agent_id: form_data.assigned_agent || undefined,
         issue_summary: form_data.issue_summary,
         status: form_data.status,
         internal_notes: form_data.internal_notes,

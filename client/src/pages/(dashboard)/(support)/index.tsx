@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../auth/auth-context';
 import { useSupportTickets, useCustomers, useUsers } from '../../../hooks';
 import { useDialog } from '../../../components/dialogs/DialogProvider';
+import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
 import LoadingSpinner from '../../../components/ui/loading-spinner';
 import SupportTicketModal from './support-ticket-modal';
 import '../(sales)/(leads)/leads.scss';
@@ -13,17 +14,17 @@ const Support = () => {
   const { users } = useUsers();
   const { showAlert, showConfirm } = useDialog();
   const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<any>(null);
+  const [editing, set_editing] = useState<SupportTicket | null>(null);
   const [search_input, set_search_input] = useState('');
 
-  const filtered_tickets = tickets.filter((ticket: any) =>
+  const filtered_tickets = tickets.filter((ticket) =>
     ticket.issue_summary.toLowerCase().includes(search_input.toLowerCase()) ||
-    ticket.customer.name.toLowerCase().includes(search_input.toLowerCase())
+    ticket.customer?.name.toLowerCase().includes(search_input.toLowerCase())
   );
 
-  const handle_create = async (input: any) => {
+  const handle_create = async (input: SupportTicketInput) => {
     try {
-      await create(input as any);
+      await create(input);
       set_modal_open(false);
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create ticket';
@@ -32,10 +33,10 @@ const Support = () => {
     }
   };
 
-  const handle_update = async (input: any) => {
+  const handle_update = async (input: SupportTicketInput) => {
     if (!editing) return;
     try {
-      await update(editing.id, input as any);
+      await update(editing.id, input);
       set_modal_open(false);
       set_editing(null);
     } catch (err) {
@@ -68,7 +69,7 @@ const Support = () => {
     set_modal_open(true);
   };
 
-  const handle_open_edit = (ticket: any) => {
+  const handle_open_edit = (ticket: SupportTicket) => {
     set_editing(ticket);
     set_modal_open(true);
   };
@@ -112,7 +113,7 @@ const Support = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_tickets.map((ticket: any) => (
+          {filtered_tickets.map((ticket) => (
             <tr key={ticket.id}>
               <td>{ticket.issue_summary}</td>
               <td>{ticket.customer.name}</td>

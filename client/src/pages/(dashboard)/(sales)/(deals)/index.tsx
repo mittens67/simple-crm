@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useDeals, useCustomers, useUsers } from '../../../../hooks';
 import { useDialog } from '../../../../components/dialogs/DialogProvider';
+import type { Deal, DealInput } from '../../../../types/deal';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
 import DealModal from './deal-modal';
 import '../(leads)/leads.scss';
@@ -13,17 +14,17 @@ const Deals = () => {
   const { users } = useUsers();
   const { showAlert, showConfirm } = useDialog();
   const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<any>(null);
+  const [editing, set_editing] = useState<Deal | null>(null);
   const [search_input, set_search_input] = useState('');
 
-  const filtered_deals = deals.filter((deal: any) =>
+  const filtered_deals = deals.filter((deal) =>
     deal.title.toLowerCase().includes(search_input.toLowerCase()) ||
-    deal.customer.name.toLowerCase().includes(search_input.toLowerCase())
+    deal.customer?.name.toLowerCase().includes(search_input.toLowerCase())
   );
 
-  const handle_create = async (input: any) => {
+  const handle_create = async (input: DealInput) => {
     try {
-      await create(input as any);
+      await create(input);
       set_modal_open(false);
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create deal';
@@ -32,10 +33,10 @@ const Deals = () => {
     }
   };
 
-  const handle_update = async (input: any) => {
+  const handle_update = async (input: DealInput) => {
     if (!editing) return;
     try {
-      await update(editing.id, input as any);
+      await update(editing.id, input);
       set_modal_open(false);
       set_editing(null);
     } catch (err) {
@@ -68,7 +69,7 @@ const Deals = () => {
     set_modal_open(true);
   };
 
-  const handle_open_edit = (deal: any) => {
+  const handle_open_edit = (deal: Deal) => {
     set_editing(deal);
     set_modal_open(true);
   };
@@ -114,7 +115,7 @@ const Deals = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_deals.map((deal: any) => (
+          {filtered_deals.map((deal) => (
             <tr key={deal.id}>
               <td>{deal.title}</td>
               <td>{deal.customer.name}</td>

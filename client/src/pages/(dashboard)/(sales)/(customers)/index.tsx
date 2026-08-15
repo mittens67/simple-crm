@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useCustomers, useUsers } from '../../../../hooks';
 import { useDialog } from '../../../../components/dialogs/DialogProvider';
-import type { Customer } from '../../../../types/customer';
+import type { Customer, CustomerInput } from '../../../../types/customer';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
 import CustomerModal from './customer-modal';
 import '../(leads)/leads.scss';
@@ -21,9 +21,9 @@ const Customers = () => {
     customer.email.toLowerCase().includes(search_input.toLowerCase())
   );
 
-  const handle_create = async (input: any) => {
+  const handle_create = async (input: CustomerInput) => {
     try {
-      await create(input as any);
+      await create(input);
       set_modal_open(false);
     } catch (err) {
       const error_msg = err instanceof Error ? err.message : 'Failed to create customer';
@@ -32,10 +32,10 @@ const Customers = () => {
     }
   };
 
-  const handle_update = async (input: any) => {
+  const handle_update = async (input: CustomerInput) => {
     if (!editing) return;
     try {
-      await update(editing.id, input as any);
+      await update(editing.id, input);
       set_modal_open(false);
       set_editing(null);
     } catch (err) {
