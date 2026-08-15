@@ -1,20 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { SupportTicketInput } from '../../../../types/support-ticket';
-
-interface SupportTicket {
-  id: string;
-  customer: {
-    id: string;
-    name: string;
-  };
-  assigned_agent?: {
-    id: string;
-    name: string;
-  };
-  status: string;
-  issue_summary: string;
-  internal_notes: string;
-}
+import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
 
 interface Customer {
   id: string;
@@ -43,20 +28,24 @@ const SupportTicketModal = ({
 }: SupportTicketModalProps) => {
   const [form_data, set_form_data] = useState({
     customer_id: '',
-    assigned_agent: '',
-    issue_summary: '',
+    assigned_rep_id: '',
+    title: '',
+    description: '',
     status: 'Open',
-    internal_notes: '',
+    priority: 'Medium',
+    resolution: '',
   });
 
   useEffect(() => {
     if (ticket) {
       set_form_data({
-        customer_id: ticket.customer.id,
-        assigned_agent: ticket.assigned_agent?.id || '',
-        issue_summary: ticket.issue_summary,
+        customer_id: ticket.customer_id || '',
+        assigned_rep_id: ticket.assigned_rep_id || '',
+        title: ticket.title,
+        description: ticket.description,
         status: ticket.status,
-        internal_notes: ticket.internal_notes || '',
+        priority: ticket.priority,
+        resolution: ticket.resolution || '',
       });
     }
   }, [ticket]);
@@ -71,17 +60,22 @@ const SupportTicketModal = ({
 
     if (ticket) {
       const partial_input: Partial<SupportTicketInput> = {};
-      if (form_data.status) partial_input.status = form_data.status;
-      if (form_data.internal_notes !== undefined) partial_input.internal_notes = form_data.internal_notes;
-      if (form_data.assigned_agent !== undefined) partial_input.assigned_agent_id = form_data.assigned_agent || null;
+      if (form_data.title) partial_input.title = form_data.title;
+      if (form_data.description) partial_input.description = form_data.description;
+      if (form_data.status) partial_input.status = form_data.status as SupportTicket['status'];
+      if (form_data.priority) partial_input.priority = form_data.priority as SupportTicket['priority'];
+      if (form_data.resolution !== undefined) partial_input.resolution = form_data.resolution;
+      if (form_data.assigned_rep_id !== undefined) partial_input.assigned_rep_id = form_data.assigned_rep_id || null;
       on_save(partial_input as SupportTicketInput);
     } else {
       on_save({
         customer_id: form_data.customer_id,
-        assigned_agent_id: form_data.assigned_agent || undefined,
-        issue_summary: form_data.issue_summary,
-        status: form_data.status,
-        internal_notes: form_data.internal_notes,
+        assigned_rep_id: form_data.assigned_rep_id || undefined,
+        title: form_data.title,
+        description: form_data.description,
+        status: form_data.status as SupportTicket['status'],
+        priority: form_data.priority as SupportTicket['priority'],
+        resolution: form_data.resolution || undefined,
       });
     }
   };
@@ -117,11 +111,11 @@ const SupportTicketModal = ({
               </div>
 
               <div className="form-group">
-                <label>Issue Summary *</label>
+                <label>Title *</label>
                 <input
                   type="text"
-                  name="issue_summary"
-                  value={form_data.issue_summary}
+                  name="title"
+                  value={form_data.title}
                   onChange={handle_change}
                   required
                 />
@@ -130,10 +124,30 @@ const SupportTicketModal = ({
           )}
 
           <div className="form-group">
-            <label>Assigned Agent</label>
+            <label>Description</label>
+            <textarea
+              name="description"
+              value={form_data.description}
+              onChange={handle_change}
+              rows={3}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Priority</label>
+            <select name="priority" value={form_data.priority} onChange={handle_change}>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Assigned Rep</label>
             <select
-              name="assigned_agent"
-              value={form_data.assigned_agent}
+              name="assigned_rep_id"
+              value={form_data.assigned_rep_id}
               onChange={handle_change}
             >
               <option value="">Unassigned</option>
@@ -148,18 +162,18 @@ const SupportTicketModal = ({
           <div className="form-group">
             <label>Status</label>
             <select name="status" value={form_data.status} onChange={handle_change}>
-              <option>Open</option>
-              <option>InProgress</option>
-              <option>Resolved</option>
-              <option>Closed</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Closed">Closed</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Internal Notes</label>
+            <label>Resolution</label>
             <textarea
-              name="internal_notes"
-              value={form_data.internal_notes}
+              name="resolution"
+              value={form_data.resolution}
               onChange={handle_change}
               rows={4}
             />

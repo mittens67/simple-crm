@@ -1,37 +1,10 @@
 import { useState, useEffect } from 'react';
-
-interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: string;
-  assigned_rep?: {
-    id: string;
-    name: string;
-  };
-  customer?: {
-    id: string;
-    name: string;
-  };
-  sales_notes?: string;
-  archive_notes?: string;
-}
+import type { Lead, LeadInput } from '../../../../types/lead';
 
 interface User {
   id: string;
   name: string;
   email: string;
-}
-
-export interface LeadInput {
-  name: string;
-  email: string;
-  phone: string;
-  status: string;
-  assigned_rep_id?: string;
-  sales_notes?: string;
-  archive_notes?: string;
 }
 
 interface LeadModalProps {
@@ -74,11 +47,11 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
   const handle_submit = (e: React.FormEvent) => {
     e.preventDefault();
     const { name, email, phone, status, assigned_rep_id, sales_notes, archive_notes } = form_data;
-    const input = {
+    const input: LeadInput = {
       name,
       email,
       phone,
-      status,
+      status: status as any,
       ...(assigned_rep_id && { assigned_rep_id }),
       ...(sales_notes && { sales_notes }),
       ...(archive_notes && { archive_notes }),

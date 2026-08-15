@@ -18,7 +18,7 @@ const Support = () => {
   const [search_input, set_search_input] = useState('');
 
   const filtered_tickets = tickets.filter((ticket) =>
-    ticket.issue_summary.toLowerCase().includes(search_input.toLowerCase()) ||
+    ticket.title.toLowerCase().includes(search_input.toLowerCase()) ||
     ticket.customer?.name.toLowerCase().includes(search_input.toLowerCase())
   );
 
@@ -105,9 +105,10 @@ const Support = () => {
       <table className="leads-table">
         <thead>
           <tr>
-            <th>Issue</th>
+            <th>Title</th>
             <th>Customer</th>
-            <th>Assigned Agent</th>
+            <th>Assigned Rep</th>
+            <th>Priority</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -115,9 +116,10 @@ const Support = () => {
         <tbody>
           {filtered_tickets.map((ticket) => (
             <tr key={ticket.id}>
-              <td>{ticket.issue_summary}</td>
-              <td>{ticket.customer.name}</td>
-              <td>{ticket.assigned_agent?.name || 'Unassigned'}</td>
+              <td>{ticket.title}</td>
+              <td>{ticket.customer?.name || '-'}</td>
+              <td>{ticket.assigned_rep?.name || 'Unassigned'}</td>
+              <td>{ticket.priority}</td>
               <td>
                 <span className={`status status-${ticket.status.toLowerCase()}`}>
                   {ticket.status}

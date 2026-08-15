@@ -107,10 +107,10 @@ const Deals = () => {
           <tr>
             <th>Title</th>
             <th>Customer</th>
-            <th>Owner</th>
-            <th>Value</th>
+            <th>Rep</th>
+            <th>Amount</th>
             <th>Status</th>
-            <th>Stage</th>
+            <th>Expected Close</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -118,15 +118,15 @@ const Deals = () => {
           {filtered_deals.map((deal) => (
             <tr key={deal.id}>
               <td>{deal.title}</td>
-              <td>{deal.customer.name}</td>
-              <td>{deal.owner?.name || 'Unassigned'}</td>
-              <td>${deal.value.toLocaleString()}</td>
+              <td>{deal.customer?.name || '-'}</td>
+              <td>{deal.assigned_rep?.name || 'Unassigned'}</td>
+              <td>${deal.amount.toLocaleString()}</td>
               <td>
                 <span className={`status status-${deal.status.toLowerCase()}`}>
                   {deal.status}
                 </span>
               </td>
-              <td>{deal.stage}</td>
+              <td>{deal.expected_close_date || '-'}</td>
               <td className="actions">
                 {can('deals.update') && (
                   <button className="btn-small" onClick={() => handle_open_edit(deal)}>
