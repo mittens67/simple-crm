@@ -140,7 +140,7 @@ describe('Support Note Resolver', () => {
 
   describe('supportNote query', () => {
     it('returns note by id', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'Specific note',
@@ -150,7 +150,7 @@ describe('Support Note Resolver', () => {
       const result = await supportNoteResolvers.Query.supportNote(null, { id: note._id.toString() }, context);
 
       expect(result).toBeDefined();
-      expect(result.content).toBe('Specific note');
+      expect(result?.content).toBe('Specific note');
     });
 
     it('returns null for nonexistent note', async () => {
@@ -160,7 +160,7 @@ describe('Support Note Resolver', () => {
     });
 
     it('throws FORBIDDEN without support_notes.read permission', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'Test',
@@ -270,7 +270,7 @@ describe('Support Note Resolver', () => {
 
   describe('updateSupportNote mutation', () => {
     it('updates note with support_notes.update permission', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'Original content',
@@ -300,7 +300,7 @@ describe('Support Note Resolver', () => {
     });
 
     it('throws FORBIDDEN without support_notes.update permission', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'To update',
@@ -331,7 +331,7 @@ describe('Support Note Resolver', () => {
 
   describe('deleteSupportNote mutation', () => {
     it('deletes note with support_notes.delete permission', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'To delete',
@@ -359,7 +359,7 @@ describe('Support Note Resolver', () => {
     });
 
     it('throws FORBIDDEN without support_notes.delete permission', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'To delete',
@@ -389,7 +389,7 @@ describe('Support Note Resolver', () => {
 
   describe('field resolvers', () => {
     it('SupportNote.customer resolves customer', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'Test',
@@ -397,11 +397,11 @@ describe('Support Note Resolver', () => {
 
       const result = await supportNoteResolvers.SupportNote.customer(note);
       expect(result).toBeDefined();
-      expect(result.name).toBe('Test Customer 1');
+      expect(result?.name).toBe('Test Customer 1');
     });
 
     it('SupportNote.author resolves user', async () => {
-      const note = await SupportNote.create({
+      const note: any = await SupportNote.create({
         customer_id: test_customer._id,
         author_id: test_user._id,
         content: 'Test',
@@ -409,7 +409,7 @@ describe('Support Note Resolver', () => {
 
       const result = await supportNoteResolvers.SupportNote.author(note);
       expect(result).toBeDefined();
-      expect(result.name).toBe('Support User');
+      expect(result?.name).toBe('Support User');
     });
   });
 });

@@ -248,7 +248,7 @@ describe('LeadService', () => {
       const context = mock_context(test_user, sales_role);
       const deleted = await lead_service.deleteLead(created.id, context);
 
-      expect(deleted.status).toBe('Archived');
+      expect(deleted?.status).toBe('Archived');
     });
 
     it('should throw NotFoundError if lead does not exist', async () => {

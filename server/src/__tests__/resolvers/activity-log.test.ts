@@ -260,7 +260,7 @@ describe('Activity Log Resolver', () => {
 
   describe('field resolvers', () => {
     it('ActivityLog.user resolves user', async () => {
-      const log = await ActivityLog.create({
+      const log: any = await ActivityLog.create({
         user_id: test_user._id,
         action: 'test_action',
         metadata: {},
@@ -268,8 +268,8 @@ describe('Activity Log Resolver', () => {
 
       const result = await activityLogResolvers.ActivityLog.user(log);
       expect(result).toBeDefined();
-      expect(result.name).toBe('Activity User 1');
-      expect(result.email).toBe('activity1@example.com');
+      expect(result?.name).toBe('Activity User 1');
+      expect(result?.email).toBe('activity1@example.com');
     });
 
     it('ActivityLog.user resolves correctly for different users', async () => {
@@ -288,8 +288,8 @@ describe('Activity Log Resolver', () => {
       const result1 = await activityLogResolvers.ActivityLog.user(log1);
       const result2 = await activityLogResolvers.ActivityLog.user(log2);
 
-      expect(result1.name).toBe('Activity User 1');
-      expect(result2.name).toBe('Activity User 2');
+      expect(result1?.name).toBe('Activity User 1');
+      expect(result2?.name).toBe('Activity User 2');
     });
   });
 

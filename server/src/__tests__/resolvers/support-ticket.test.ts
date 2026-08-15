@@ -120,7 +120,7 @@ describe('Support Ticket Resolver', () => {
 
   describe('supportTicket query', () => {
     it('returns ticket by id', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'Specific Issue',
@@ -131,8 +131,8 @@ describe('Support Ticket Resolver', () => {
       const result = await supportTicketResolvers.Query.supportTicket(null, { id: ticket._id.toString() }, context);
 
       expect(result).toBeDefined();
-      expect(result.issue_summary).toBe('Specific Issue');
-      expect(result.status).toBe('Resolved');
+      expect(result?.issue_summary).toBe('Specific Issue');
+      expect(result?.status).toBe('Resolved');
     });
 
     it('returns null for nonexistent ticket', async () => {
@@ -281,7 +281,7 @@ describe('Support Ticket Resolver', () => {
 
   describe('updateSupportTicket mutation', () => {
     it('updates ticket with support_tickets.update permission', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'Original',
@@ -314,7 +314,7 @@ describe('Support Ticket Resolver', () => {
     });
 
     it('throws FORBIDDEN without support_tickets.update permission', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'To Update',
@@ -346,7 +346,7 @@ describe('Support Ticket Resolver', () => {
 
   describe('deleteSupportTicket mutation', () => {
     it('deletes ticket with support_tickets.delete permission', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'To Delete',
@@ -375,7 +375,7 @@ describe('Support Ticket Resolver', () => {
     });
 
     it('throws FORBIDDEN without support_tickets.delete permission', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'To Delete',
@@ -406,7 +406,7 @@ describe('Support Ticket Resolver', () => {
 
   describe('field resolvers', () => {
     it('SupportTicket.customer resolves customer', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'Test',
@@ -415,11 +415,11 @@ describe('Support Ticket Resolver', () => {
 
       const result = await supportTicketResolvers.SupportTicket.customer(ticket);
       expect(result).toBeDefined();
-      expect(result.name).toBe('Test Customer');
+      expect(result?.name).toBe('Test Customer');
     });
 
     it('SupportTicket.assigned_agent resolves user', async () => {
-      const ticket = await SupportTicket.create({
+      const ticket: any = await SupportTicket.create({
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'Test',
@@ -428,7 +428,7 @@ describe('Support Ticket Resolver', () => {
 
       const result = await supportTicketResolvers.SupportTicket.assigned_agent(ticket);
       expect(result).toBeDefined();
-      expect(result.name).toBe('Support Agent');
+      expect(result?.name).toBe('Support Agent');
     });
   });
 });

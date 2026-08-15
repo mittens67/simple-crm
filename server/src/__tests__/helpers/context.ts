@@ -1,15 +1,18 @@
 import type { Types } from 'mongoose';
+import type { ApolloContext } from '../../graphql/context';
 
-export interface MockContext {
+export interface MockContext extends Omit<ApolloContext, 'req' | 'res'> {
   user: any;
   user_id: Types.ObjectId;
   role: any;
-  auth_retried: boolean;
+  auth_retried?: boolean;
+  req?: any;
+  res?: any;
 }
 
-export const mock_context = (user: any, role: any = null): MockContext => ({
+export const mock_context = (user: any, role: any = null): ApolloContext => ({
   user,
-  user_id: user._id,
   role,
-  auth_retried: false,
+  req: {} as any,
+  res: {} as any,
 });
