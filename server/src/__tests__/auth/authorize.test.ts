@@ -103,7 +103,7 @@ describe('require_permission', () => {
     const role = { _id: '456', permissions: { '*': true } };
     const context = mock_context(user, role) as any as ApolloContext;
 
-    const result = require_permission(context, 'anything.action');
+    const result = require_permission(context, 'anything.action' as any);
     expect(result).toBe(user);
   });
 });

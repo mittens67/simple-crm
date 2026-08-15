@@ -180,7 +180,7 @@ describe('Role Resolver', () => {
 
   describe('updateRole mutation', () => {
     it('updates role with roles.update permission', async () => {
-      const test_role = await Role.create({
+      const test_role: any = await Role.create({
         name: 'UpdateableRole',
         permissions: { 'leads.read': true },
       });
@@ -207,7 +207,7 @@ describe('Role Resolver', () => {
     });
 
     it('throws FORBIDDEN without roles.update permission', async () => {
-      const test_role = await Role.create({
+      const test_role: any = await Role.create({
         name: 'ProtectedRole',
         permissions: { 'leads.read': true },
       });
@@ -259,7 +259,7 @@ describe('Role Resolver', () => {
 
   describe('deleteRole mutation', () => {
     it('deletes role with roles.delete permission', async () => {
-      const test_role = await Role.create({
+      const test_role: any = await Role.create({
         name: 'DeletableRole',
         permissions: { 'leads.read': true },
       });
@@ -278,7 +278,7 @@ describe('Role Resolver', () => {
     });
 
     it('throws FORBIDDEN without roles.delete permission', async () => {
-      const test_role = await Role.create({
+      const test_role: any = await Role.create({
         name: 'ProtectedDeleteRole',
         permissions: { 'leads.read': true },
       });
@@ -307,7 +307,7 @@ describe('Role Resolver', () => {
     });
 
     it('throws when role has assigned users', async () => {
-      const test_role = await Role.create({
+      const test_role: any = await Role.create({
         name: 'AssignedRole',
         permissions: { 'leads.read': true },
       });

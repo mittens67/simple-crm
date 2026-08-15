@@ -96,7 +96,7 @@ describe('Deal Resolver', () => {
 
   describe('deal query', () => {
     it('returns deal by id', async () => {
-      const deal = await Deal.create({
+      const deal: any = await Deal.create({
         title: 'Single Deal',
         customer_id: test_customer._id,
         owner_id: test_user._id,
@@ -259,7 +259,7 @@ describe('Deal Resolver', () => {
 
   describe('updateDeal mutation', () => {
     it('updates deal with deals.update permission', async () => {
-      const deal = await Deal.create({
+      const deal: any = await Deal.create({
         title: 'Original Deal',
         customer_id: test_customer._id,
         owner_id: test_user._id,
@@ -283,7 +283,7 @@ describe('Deal Resolver', () => {
     });
 
     it('throws FORBIDDEN without deals.update permission', async () => {
-      const deal = await Deal.create({
+      const deal: any = await Deal.create({
         title: 'Protected Deal',
         customer_id: test_customer._id,
         owner_id: test_user._id,
@@ -319,7 +319,7 @@ describe('Deal Resolver', () => {
     });
 
     it('throws on non-existent customer_id during update', async () => {
-      const deal = await Deal.create({
+      const deal: any = await Deal.create({
         title: 'Deal',
         customer_id: test_customer._id,
         owner_id: test_user._id,
@@ -345,7 +345,7 @@ describe('Deal Resolver', () => {
 
   describe('deleteDeal mutation', () => {
     it('deletes deal with deals.delete permission', async () => {
-      const deal = await Deal.create({
+      const deal: any = await Deal.create({
         title: 'To Delete',
         customer_id: test_customer._id,
         owner_id: test_user._id,
@@ -380,7 +380,7 @@ describe('Deal Resolver', () => {
     });
 
     it('throws FORBIDDEN without deals.delete permission', async () => {
-      const deal = await Deal.create({
+      const deal: any = await Deal.create({
         title: 'Protected Delete',
         customer_id: test_customer._id,
         owner_id: test_user._id,

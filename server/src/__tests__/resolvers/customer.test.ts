@@ -91,7 +91,7 @@ describe('Customer Resolver', () => {
 
   describe('customer query', () => {
     it('returns customer by id', async () => {
-      const customer = await Customer.create({
+      const customer: any = await Customer.create({
         name: 'Test Corp',
         email: 'test@corp.com',
         phone: '555-1234',
@@ -201,7 +201,7 @@ describe('Customer Resolver', () => {
 
   describe('updateCustomer mutation', () => {
     it('updates customer with customers.update permission', async () => {
-      const customer = await Customer.create({
+      const customer: any = await Customer.create({
         name: 'Original Name',
         email: 'original@test.com',
         phone: '555-0000',
@@ -221,7 +221,7 @@ describe('Customer Resolver', () => {
     });
 
     it('throws FORBIDDEN without customers.update permission', async () => {
-      const customer = await Customer.create({
+      const customer: any = await Customer.create({
         name: 'Protected Customer',
         email: 'protected@test.com',
         phone: '555-5555',
@@ -269,7 +269,7 @@ describe('Customer Resolver', () => {
 
   describe('deleteCustomer mutation', () => {
     it('deletes customer with customers.delete permission', async () => {
-      const customer = await Customer.create({
+      const customer: any = await Customer.create({
         name: 'To Delete',
         email: 'delete@test.com',
         phone: '555-7777',
@@ -301,7 +301,7 @@ describe('Customer Resolver', () => {
     });
 
     it('throws FORBIDDEN without customers.delete permission', async () => {
-      const customer = await Customer.create({
+      const customer: any = await Customer.create({
         name: 'Protected Delete',
         email: 'protecteddelete@test.com',
         phone: '555-8888',
