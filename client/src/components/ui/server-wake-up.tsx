@@ -27,13 +27,13 @@ export const ServerWakeUp = ({ onSuccess }: ServerWakeUpProps) => {
             fetchPolicy: 'network-only',
           });
           onSuccess();
-        } catch (err) {
+        } catch {
           setAttempts(1);
         }
       };
       initial_attempt();
     }
-  }, []);
+  }, [attempts, onSuccess]);
 
   useEffect(() => {
     if (attempts === 0 || attempts >= MAX_ATTEMPTS) return;
@@ -45,7 +45,7 @@ export const ServerWakeUp = ({ onSuccess }: ServerWakeUpProps) => {
           fetchPolicy: 'network-only',
         });
         onSuccess();
-      } catch (err) {
+      } catch {
         if (attempts + 1 < MAX_ATTEMPTS) {
           setAttempts((prev) => prev + 1);
         } else {

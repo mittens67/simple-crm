@@ -1,7 +1,7 @@
 export interface ApiError {
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, string | number | boolean | object>;
 }
 
 export interface PaginationParams {

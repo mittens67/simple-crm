@@ -78,7 +78,7 @@ const Roles = () => {
     if (!role_name.trim()) return;
 
     const perm_input = Object.entries(permissions)
-      .filter(([_, val]) => val)
+      .filter(([, val]) => val)
       .map(([key]) => ({ key, value: true }));
 
     try {

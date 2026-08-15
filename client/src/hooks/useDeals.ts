@@ -54,9 +54,9 @@ export const useDeals = () => {
           return response.data.updateDeal;
         }
         throw new Error('No data returned from server');
-      } catch (err: any) {
-        if (err?.graphQLErrors?.length > 0) {
-          throw new Error(err.graphQLErrors[0].message);
+      } catch (err) {
+        if (err instanceof Error && 'graphQLErrors' in err && Array.isArray((err as any).graphQLErrors) && (err as any).graphQLErrors.length > 0) {
+          throw new Error((err as any).graphQLErrors[0].message);
         }
         throw err;
       }
@@ -76,9 +76,9 @@ export const useDeals = () => {
           return response.data.deleteDeal;
         }
         throw new Error('No data returned from server');
-      } catch (err: any) {
-        if (err?.graphQLErrors?.length > 0) {
-          throw new Error(err.graphQLErrors[0].message);
+      } catch (err) {
+        if (err instanceof Error && 'graphQLErrors' in err && Array.isArray((err as any).graphQLErrors) && (err as any).graphQLErrors.length > 0) {
+          throw new Error((err as any).graphQLErrors[0].message);
         }
         throw err;
       }

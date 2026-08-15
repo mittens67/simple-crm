@@ -108,6 +108,8 @@ jobs:
           MONGO_URI: mongodb://localhost:27017/crm_test
           ADMIN_EMAIL: admin@test.com
           ADMIN_PASSWORD: AdminTest123
+          JWT_ACCESS_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
 
       - name: Run E2E tests
         run: pnpm --dir client e2e

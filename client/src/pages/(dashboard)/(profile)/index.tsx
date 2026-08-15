@@ -16,7 +16,7 @@ const Profile = () => {
   const current_role = user.roles[current_role_index];
   const permissions = current_role?.permissions || {};
   const permission_list = Object.entries(permissions)
-    .filter(([_, granted]) => granted === true)
+    .filter(([, granted]) => granted === true)
     .map(([permission]) => permission)
     .sort();
 

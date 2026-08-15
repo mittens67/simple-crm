@@ -1,10 +1,9 @@
 import '@testing-library/jest-dom';
-import { expect } from 'vitest';
 
 declare global {
   namespace Vi {
-    interface Assertion<T = any> extends CustomMatchers<T> {}
-    interface AsymmetricMatchersContaining extends CustomMatchers {}
+    interface Assertion<T = void> extends CustomMatchers<T> {}
+    interface AsymmetricMatchersContaining extends CustomMatchers<void> {}
   }
 }
 
@@ -22,8 +21,8 @@ interface CustomMatchers<R = void> {
   toHaveAttribute(attr: string, value?: string): R;
   toHaveClass(className: string): R;
   toHaveFocus(): R;
-  toHaveFormValues(values: Record<string, any>): R;
-  toHaveStyle(css: string | Record<string, any>): R;
+  toHaveFormValues(values: Record<string, string | number | boolean>): R;
+  toHaveStyle(css: string | Record<string, string>): R;
   toHaveTextContent(text: string | RegExp, options?: { normalizeWhitespace: boolean }): R;
   toHaveValue(value: string | number | string[]): R;
   toBePartiallyChecked(): R;

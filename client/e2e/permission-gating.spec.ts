@@ -45,12 +45,11 @@ test('permission gating: GraphQL mutation rejected for unauthorized user', async
   await page.waitForURL('/dashboard', { waitUntil: 'networkidle' });
 
   // Intercept GraphQL requests
-  let mutation_response: any = null;
   page.on('response', async (response) => {
     if (response.url().includes('/graphql')) {
       try {
-        mutation_response = await response.json();
-      } catch (e) {
+        await response.json();
+      } catch {
         // Not JSON
       }
     }
