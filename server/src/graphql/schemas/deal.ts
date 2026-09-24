@@ -38,8 +38,14 @@ export default gql`
     stage: String
   }
 
+  type DealPage {
+    items: [Deal!]!
+    total: Int!
+    has_more: Boolean!
+  }
+
   type Query {
-    deals: [Deal!]!
+    deals(search: String, limit: Int, offset: Int): DealPage!
     deal(id: ID!): Deal
     dealsByOwner(owner_id: ID!): [Deal!]!
   }

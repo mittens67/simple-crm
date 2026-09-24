@@ -53,11 +53,23 @@ const Home = () => {
   const { data: deals_data } = useQuery(DEALS_QUERY);
   const { data: tickets_data } = useQuery(SUPPORT_TICKETS_QUERY);
 
-  const leads = (leads_data?.leads?.data || []) as Lead[];
-  const customers = (customers_data?.customers || []) as Customer[];
-  const deals = (deals_data?.deals || []) as Deal[];
-  const tickets = (tickets_data?.supportTickets || []) as Ticket[];
+  // Every list is paginated now, so `items` is one page and `total` is the
+  // real count. Counts must come from `total`; the old code called .length on
+  // whatever page happened to load, which capped "Total Leads" at 20.
+  const leads = (leads_data?.leads?.items || []) as Lead[];
+  const customers = (customers_data?.customers?.items || []) as Customer[];
+  const deals = (deals_data?.deals?.items || []) as Deal[];
+  const tickets = (tickets_data?.supportTickets?.items || []) as Ticket[];
 
+  const lead_total = leads_data?.leads?.total ?? 0;
+  const customer_total = customers_data?.customers?.total ?? 0;
+  const deal_total = deals_data?.deals?.total ?? 0;
+  const ticket_total = tickets_data?.supportTickets?.total ?? 0;
+
+  // These are still derived in the browser from the first page of each list,
+  // so they describe recent records rather than the whole dataset. Phase 2
+  // replaces them with server-side $group aggregations; until then the labels
+  // below say "recent" rather than overstating what the number means.
   const total_deal_value = deals.reduce((sum: number, deal) => sum + (deal.value ?? 0), 0);
   const open_tickets = tickets.filter((t) => t.status === 'Open').length;
   const won_deals = deals.filter((d) => d.status === 'Won').length;
@@ -67,25 +79,25 @@ const Home = () => {
   const stats: Card[] = [
     {
       label: 'Total Leads',
-      value: leads.length,
+      value: lead_total,
       icon: '👥',
       color: '#3b82f6',
     },
     {
       label: 'Customers',
-      value: customers.length,
+      value: customer_total,
       icon: '🏢',
       color: '#2563eb',
     },
     {
-      label: 'Deal Value',
+      label: 'Recent Deal Value',
       value: Math.round(total_deal_value / 1000),
       icon: '💰',
       color: '#1d4ed8',
       subtitle: 'K',
     },
     {
-      label: 'Open Tickets',
+      label: 'Open Tickets (recent)',
       value: open_tickets,
       icon: '🎫',
       color: '#60a5fa',
@@ -136,20 +148,20 @@ const Home = () => {
           <h2>Quick Stats</h2>
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-label">Leads In Progress</span>
+              <span className="stat-label">Leads In Progress (recent)</span>
               <span className="stat-number">{pending_leads}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Won Deals</span>
+              <span className="stat-label">Won Deals (recent)</span>
               <span className="stat-number">{won_deals}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Active Customers</span>
-              <span className="stat-number">{customers.length}</span>
+              <span className="stat-label">Total Deals</span>
+              <span className="stat-number">{deal_total}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Pending Support</span>
-              <span className="stat-number">{open_tickets}</span>
+              <span className="stat-label">Total Tickets</span>
+              <span className="stat-number">{ticket_total}</span>
             </div>
           </div>
         </div>

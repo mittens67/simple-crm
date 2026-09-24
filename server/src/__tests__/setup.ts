@@ -15,7 +15,9 @@ const db_name = `test-${randomUUID()}`;
 beforeAll(async () => {
   const mongo_uri = inject('mongo_uri');
   process.env.MONGO_URI = mongo_uri;
-  await mongoose.connect(mongo_uri, { dbName: db_name });
+  // monitorCommands lets tests observe the actual queries issued, which is how
+  // the DataLoader batching test measures rather than assumes.
+  await mongoose.connect(mongo_uri, { dbName: db_name, monitorCommands: true });
 });
 
 afterAll(async () => {

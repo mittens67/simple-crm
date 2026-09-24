@@ -1,6 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // graphql ships both CJS and ESM. Without deduping, a test that imports the
+  // executor gets the .mjs copy while @graphql-tools builds the schema with
+  // the CJS one, and graphql's instanceOf check rejects the cross-copy schema.
+  resolve: {
+    dedupe: ['graphql'],
+    alias: { graphql: 'graphql/index.js' },
+  },
   test: {
     globals: true,
     environment: 'node',

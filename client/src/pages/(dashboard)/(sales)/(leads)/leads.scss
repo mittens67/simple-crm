@@ -46,6 +46,13 @@
   .leads-table {
     width: 100%;
     border-collapse: collapse;
+
+    .table-empty {
+      text-align: center;
+      padding: 3.2rem 1.6rem;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
     background: var(--table-bg);
     backdrop-filter: blur(10px);
     border: 1px solid var(--table-border);

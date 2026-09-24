@@ -1,99 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useLeads, useUsers } from '../../../../hooks';
-import { useDialog } from '../../../../components/dialogs/DialogProvider';
+import { useResourcePage } from '../../../../hooks/use-resource-page';
 import type { Lead, LeadInput } from '../../../../types/lead';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
+import Pagination from '../../../../components/ui/pagination';
 import LeadModal from './lead-modal';
 import LeadView from './lead-view';
 import './leads.scss';
 
 const Leads = () => {
   const { can } = useAuth();
-  const { leads, total, loading, create, update, delete: deleteLead, setSearch, setOffset, offset, limit, setError: setLeads_error } = useLeads();
-  const { users } = useUsers();
-  const { showAlert, showConfirm } = useDialog();
-  const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<Lead | null>(null);
+  const leads = useLeads();
+  const { items: users } = useUsers();
   const [viewing, set_viewing] = useState<Lead | null>(null);
-  const [search_input, set_search_input] = useState('');
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearch(search_input);
-      setOffset(0);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search_input, setSearch, setOffset]);
+  const page = useResourcePage<Lead, LeadInput>({ crud: leads, noun: 'lead' });
 
-  const handle_create = async (input: LeadInput) => {
-    try {
-      await create(input);
-      set_modal_open(false);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to create lead';
-      setLeads_error(error_msg);
-      await showAlert('Error', `Error creating lead: ${error_msg}`);
-    }
-  };
+  const is_terminal = (lead: Lead) => lead.status === 'Archived' || lead.status === 'Converted';
 
-  const handle_update = async (input: LeadInput) => {
-    if (!editing) return;
-    try {
-      await update(editing.id, input);
-      set_modal_open(false);
-      set_editing(null);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to update lead';
-      setLeads_error(error_msg);
-      await showAlert('Error', `Error updating lead: ${error_msg}`);
-    }
-  };
-
-  const handle_delete = async (id: string) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Lead',
-      message: 'Are you sure you want to delete this lead?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-    if (confirmed) {
-      try {
-        await deleteLead(id);
-      } catch (err) {
-        const error_msg = err instanceof Error ? err.message : 'Failed to delete lead';
-        setLeads_error(error_msg);
-        await showAlert('Error', `Error deleting lead: ${error_msg}`);
-      }
-    }
-  };
-
-  const handle_open_create = () => {
-    set_editing(null);
-    set_modal_open(true);
-  };
-
-  const handle_open_edit = (lead: Lead) => {
-    set_editing(lead);
-    set_modal_open(true);
-  };
-
-  const handle_close_modal = () => {
-    set_modal_open(false);
-    set_editing(null);
-    set_viewing(null);
-  };
-
-  const max_pages = Math.ceil(total / limit);
-
-  if (loading) return <LoadingSpinner />;
+  if (leads.loading && leads.items.length === 0) return <LoadingSpinner />;
 
   return (
     <div className="leads">
       <div className="leads-header">
         <h1>Leads</h1>
         {can('leads.create') && (
-          <button className="btn-primary" onClick={handle_open_create}>
+          <button className="btn-primary" onClick={page.open_create}>
             + New Lead
           </button>
         )}
@@ -103,9 +36,8 @@ const Leads = () => {
         <input
           type="text"
           placeholder="Search leads by name, email, or phone..."
-          value={search_input}
-          onChange={(e) => set_search_input(e.target.value)}
-          disabled={loading}
+          value={page.search_input}
+          onChange={(e) => page.set_search_input(e.target.value)}
         />
       </div>
 
@@ -122,31 +54,36 @@ const Leads = () => {
           </tr>
         </thead>
         <tbody>
-          {leads.map((lead: Lead) => (
+          {leads.items.length === 0 && (
+            <tr>
+              <td colSpan={7} className="table-empty">
+                {page.search_input ? 'No leads match that search.' : 'No leads yet.'}
+              </td>
+            </tr>
+          )}
+          {leads.items.map((lead) => (
             <tr key={lead.id}>
               <td>{lead.name}</td>
               <td>{lead.email}</td>
               <td>{lead.phone}</td>
               <td>
-                <span className={`status status-${lead.status.toLowerCase()}`}>
-                  {lead.status}
-                </span>
+                <span className={`status status-${lead.status.toLowerCase()}`}>{lead.status}</span>
               </td>
               <td>{lead.assigned_rep?.name || 'Unassigned'}</td>
               <td>{lead.customer?.name || '-'}</td>
               <td className="actions">
-                {can('leads.update') && lead.status !== 'Archived' && lead.status !== 'Converted' && (
-                  <button className="btn-small" onClick={() => handle_open_edit(lead)}>
+                {can('leads.update') && !is_terminal(lead) && (
+                  <button className="btn-small" onClick={() => page.open_edit(lead)}>
                     Edit
                   </button>
                 )}
-                {can('leads.update') && (lead.status === 'Archived' || lead.status === 'Converted') && (
+                {can('leads.update') && is_terminal(lead) && (
                   <button className="btn-small" onClick={() => set_viewing(lead)}>
                     View
                   </button>
                 )}
-                {can('leads.delete') && lead.status !== 'Archived' && lead.status !== 'Converted' && (
-                  <button className="btn-small btn-danger" onClick={() => handle_delete(lead.id)}>
+                {can('leads.delete') && !is_terminal(lead) && (
+                  <button className="btn-small btn-danger" onClick={() => page.remove(lead.id)}>
                     Delete
                   </button>
                 )}
@@ -156,39 +93,22 @@ const Leads = () => {
         </tbody>
       </table>
 
-      <div className="pagination-controls" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button
-          className="btn-secondary"
-          onClick={() => setOffset(Math.max(0, offset - limit))}
-          disabled={offset === 0}
-        >
-          ← Previous
-        </button>
-        <span style={{ fontSize: '14px' }}>
-          Page {offset / limit + 1} of {max_pages || 1} ({total} total)
-        </span>
-        <button
-          className="btn-secondary"
-          onClick={() => setOffset(offset + limit)}
-          disabled={offset + limit >= total}
-        >
-          Next →
-        </button>
-      </div>
+      <Pagination
+        offset={leads.offset}
+        limit={leads.limit}
+        total={leads.total}
+        on_previous={leads.previous_page}
+        on_next={leads.next_page}
+      />
 
-      {viewing && (
-        <LeadView
-          lead={viewing}
-          on_close={handle_close_modal}
-        />
-      )}
+      {viewing && <LeadView lead={viewing} on_close={() => set_viewing(null)} />}
 
-      {modal_open && (
+      {page.modal_open && (
         <LeadModal
-          lead={editing}
+          lead={page.editing}
           users={users}
-          on_save={editing ? handle_update : handle_create}
-          on_close={handle_close_modal}
+          on_save={page.submit}
+          on_close={page.close_modal}
         />
       )}
     </div>

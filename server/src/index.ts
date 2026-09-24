@@ -11,6 +11,7 @@ import { context, ApolloContext } from './graphql/context';
 import { typeDefs } from './graphql/typedefs';
 import { resolvers } from './graphql/resolvers';
 import { connect_db } from './config/db';
+import { format_error } from './utils/errors';
 
 const start_server = async () => {
   const app = express();
@@ -25,6 +26,18 @@ const start_server = async () => {
   const server = new ApolloServer<ApolloContext>({
     typeDefs,
     resolvers,
+    // One error strategy for the whole schema. Previously the AppError
+    // hierarchy only applied to resolvers that remembered to wrap themselves,
+    // so a missing customer surfaced as INTERNAL_SERVER_ERROR.
+    formatError: (formatted, thrown) => {
+      const mapped = format_error(thrown);
+      return {
+        ...formatted,
+        message: mapped.message,
+        extensions: { ...formatted.extensions, ...mapped.extensions },
+      };
+    },
+    introspection: env.NODE_ENV !== 'production',
   });
 
   await server.start();

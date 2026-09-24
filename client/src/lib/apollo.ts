@@ -42,7 +42,31 @@ const error_link = onError(({ graphQLErrors, operation, forward }) => {
   });
 });
 
+/**
+ * Paginated list fields are keyed by their filter arguments but NOT by
+ * offset, so paging replaces the cached page instead of accumulating a
+ * separate cache entry per offset. Without `keyArgs` Apollo warns about
+ * overwriting a non-normalized field and pagination behaves erratically.
+ */
+const paginated = (key_args: string[]) => ({
+  keyArgs: key_args,
+  merge(_existing: unknown, incoming: unknown) {
+    return incoming;
+  },
+});
+
 export const apollo_client = new ApolloClient({
   link: from([error_link, auth_link, http_link]),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          leads: paginated(['search']),
+          customers: paginated(['search']),
+          deals: paginated(['search']),
+          supportTickets: paginated(['search']),
+        },
+      },
+    },
+  }),
 });

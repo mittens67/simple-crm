@@ -1,91 +1,27 @@
-import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useCustomers, useUsers } from '../../../../hooks';
-import { useDialog } from '../../../../components/dialogs/DialogProvider';
+import { useResourcePage } from '../../../../hooks/use-resource-page';
 import type { Customer, CustomerInput } from '../../../../types/customer';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
+import Pagination from '../../../../components/ui/pagination';
 import CustomerModal from './customer-modal';
 import '../(leads)/leads.scss';
 
 const Customers = () => {
   const { can } = useAuth();
-  const { customers, loading, create, update, delete: deleteCustomer, setError: setCustomers_error } = useCustomers();
-  const { users } = useUsers();
-  const { showAlert, showConfirm } = useDialog();
-  const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<Customer | null>(null);
-  const [search_input, set_search_input] = useState('');
+  const customers = useCustomers();
+  const { items: users } = useUsers();
 
-  const filtered_customers = customers.filter((customer: Customer) =>
-    customer.name.toLowerCase().includes(search_input.toLowerCase()) ||
-    customer.email.toLowerCase().includes(search_input.toLowerCase())
-  );
+  const page = useResourcePage<Customer, CustomerInput>({ crud: customers, noun: 'customer' });
 
-  const handle_create = async (input: CustomerInput) => {
-    try {
-      await create(input);
-      set_modal_open(false);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to create customer';
-      setCustomers_error(error_msg);
-      await showAlert('Error', `Error creating customer: ${error_msg}`);
-    }
-  };
-
-  const handle_update = async (input: CustomerInput) => {
-    if (!editing) return;
-    try {
-      await update(editing.id, input);
-      set_modal_open(false);
-      set_editing(null);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to update customer';
-      setCustomers_error(error_msg);
-      await showAlert('Error', `Error updating customer: ${error_msg}`);
-    }
-  };
-
-  const handle_delete = async (id: string) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Customer',
-      message: 'Are you sure you want to delete this customer?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-    if (confirmed) {
-      try {
-        await deleteCustomer(id);
-      } catch (err) {
-        const error_msg = err instanceof Error ? err.message : 'Failed to delete customer';
-        setCustomers_error(error_msg);
-        await showAlert('Error', `Error deleting customer: ${error_msg}`);
-      }
-    }
-  };
-
-  const handle_open_create = () => {
-    set_editing(null);
-    set_modal_open(true);
-  };
-
-  const handle_open_edit = (customer: Customer) => {
-    set_editing(customer);
-    set_modal_open(true);
-  };
-
-  const handle_close_modal = () => {
-    set_modal_open(false);
-    set_editing(null);
-  };
-
-  if (loading) return <LoadingSpinner />;
+  if (customers.loading && customers.items.length === 0) return <LoadingSpinner />;
 
   return (
     <div className="leads">
       <div className="leads-header">
         <h1>Customers</h1>
         {can('customers.create') && (
-          <button className="btn-primary" onClick={handle_open_create}>
+          <button className="btn-primary" onClick={page.open_create}>
             + New Customer
           </button>
         )}
@@ -94,10 +30,9 @@ const Customers = () => {
       <div className="leads-search">
         <input
           type="text"
-          placeholder="Search customers..."
-          value={search_input}
-          onChange={(e) => set_search_input(e.target.value)}
-          disabled={loading}
+          placeholder="Search customers by name, email, or phone..."
+          value={page.search_input}
+          onChange={(e) => page.set_search_input(e.target.value)}
         />
       </div>
 
@@ -112,7 +47,14 @@ const Customers = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_customers.map((customer: Customer) => (
+          {customers.items.length === 0 && (
+            <tr>
+              <td colSpan={5} className="table-empty">
+                {page.search_input ? 'No customers match that search.' : 'No customers yet.'}
+              </td>
+            </tr>
+          )}
+          {customers.items.map((customer) => (
             <tr key={customer.id}>
               <td>{customer.name}</td>
               <td>{customer.email}</td>
@@ -120,12 +62,12 @@ const Customers = () => {
               <td>{customer.assigned_rep?.name || 'Unassigned'}</td>
               <td className="actions">
                 {can('customers.update') && (
-                  <button className="btn-small" onClick={() => handle_open_edit(customer)}>
+                  <button className="btn-small" onClick={() => page.open_edit(customer)}>
                     Edit
                   </button>
                 )}
                 {can('customers.delete') && (
-                  <button className="btn-small btn-danger" onClick={() => handle_delete(customer.id)}>
+                  <button className="btn-small btn-danger" onClick={() => page.remove(customer.id)}>
                     Delete
                   </button>
                 )}
@@ -135,12 +77,20 @@ const Customers = () => {
         </tbody>
       </table>
 
-      {modal_open && (
+      <Pagination
+        offset={customers.offset}
+        limit={customers.limit}
+        total={customers.total}
+        on_previous={customers.previous_page}
+        on_next={customers.next_page}
+      />
+
+      {page.modal_open && (
         <CustomerModal
-          customer={editing}
+          customer={page.editing}
           users={users}
-          on_save={editing ? handle_update : handle_create}
-          on_close={handle_close_modal}
+          on_save={page.submit}
+          on_close={page.close_modal}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { BASE_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
 export interface ILead extends Document {
   name: string;
@@ -34,7 +35,13 @@ const LeadSchema = new Schema<ILead>(
     sales_notes: String,
     archive_notes: String,
   },
-  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
+  BASE_SCHEMA_OPTIONS
 );
+
+add_indexes(LeadSchema, {
+  owner_fields: ['assigned_rep_id'],
+  // Leads are searched by name/email/phone and filtered by status.
+  searchable: ['email', 'name', 'status'],
+});
 
 export default mongoose.model<ILead>('Lead', LeadSchema);

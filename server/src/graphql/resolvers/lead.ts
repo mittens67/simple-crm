@@ -1,41 +1,46 @@
-import User from '../../models/user';
-import Customer from '../../models/customer';
 import { ApolloContext } from '../context';
 import { lead_service } from '../../services/lead';
-import { create_query_resolver, create_mutation_resolver } from '../../utils/resolver-wrapper';
+import { load_by_ref } from '../loaders';
+import { ILead } from '../../models/lead';
 
-const query_resolvers = create_query_resolver({
-  leads: async (_: any, { search, limit, offset }: any, context: ApolloContext) => {
-    return await lead_service.getLeads(context, search, limit, offset);
-  },
-  lead: async (_: any, { id }: { id: string }, context: ApolloContext) => {
-    return await lead_service.getLead(id, context);
-  },
-});
-
-const mutation_resolvers = create_mutation_resolver({
-  createLead: async (_: any, { input }: any, context: ApolloContext) => {
-    return await lead_service.createLead(input, context);
-  },
-
-  updateLead: async (_: any, { id, input }: any, context: ApolloContext) => {
-    return await lead_service.updateLead(id, input, context);
-  },
-
-  deleteLead: async (_: any, { id }: { id: string }, context: ApolloContext) => {
-    return await lead_service.deleteLead(id, context);
-  },
-});
-
+/**
+ * Resolvers stay thin adapters: translate arguments, delegate, return.
+ *
+ * Errors no longer need wrapping here — Apollo's `formatError` maps the shared
+ * AppError hierarchy for every resolver in the schema (see index.ts), which is
+ * what utils/resolver-wrapper.ts used to do for leads alone.
+ */
 export default {
-  Query: query_resolvers,
-  Mutation: mutation_resolvers,
+  Query: {
+    leads: (
+      _: unknown,
+      args: { search?: string; limit?: number; offset?: number },
+      context: ApolloContext
+    ) => lead_service.list(context, args),
+
+    lead: (_: unknown, { id }: { id: string }, context: ApolloContext) =>
+      lead_service.get(context, id),
+  },
+
+  Mutation: {
+    createLead: (_: unknown, { input }: { input: unknown }, context: ApolloContext) =>
+      lead_service.create(context, input),
+
+    updateLead: (
+      _: unknown,
+      { id, input }: { id: string; input: unknown },
+      context: ApolloContext
+    ) => lead_service.update(context, id, input),
+
+    deleteLead: (_: unknown, { id }: { id: string }, context: ApolloContext) =>
+      lead_service.archive(context, id),
+  },
+
   Lead: {
-    assigned_rep: async (lead: any) => {
-      return await User.findById(lead.assigned_rep_id);
-    },
-    customer: async (lead: any) => {
-      return await Customer.findById(lead.customer_id);
-    },
+    assigned_rep: (lead: ILead, _: unknown, context: ApolloContext) =>
+      load_by_ref(context.loaders.user, lead.assigned_rep_id),
+
+    customer: (lead: ILead, _: unknown, context: ApolloContext) =>
+      load_by_ref(context.loaders.customer, lead.customer_id),
   },
 };

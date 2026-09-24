@@ -26,12 +26,18 @@ importers:
       cors:
         specifier: ^2.8.5
         version: 2.8.5
+      dataloader:
+        specifier: ^2.2.3
+        version: 2.2.3
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
       express:
         specifier: ^4.21.2
         version: 4.21.2
+      express-rate-limit:
+        specifier: ^8.6.2
+        version: 8.6.2(express@4.21.2)
       graphql:
         specifier: ^16.10.0
         version: 16.10.0
@@ -41,12 +47,18 @@ importers:
       graphql-type-json:
         specifier: ^0.3.2
         version: 0.3.2(graphql@16.10.0)
+      helmet:
+        specifier: ^8.3.0
+        version: 8.3.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
       mongoose:
         specifier: ^8.13.2
         version: 8.13.2
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@eslint/js':
         specifier: ^9.25.0
@@ -72,15 +84,9 @@ importers:
       eslint:
         specifier: ^9.25.0
         version: 9.39.5
-      express-rate-limit:
-        specifier: ^8.6.2
-        version: 8.6.2(express@4.21.2)
       globals:
         specifier: ^16.0.0
         version: 16.5.0
-      helmet:
-        specifier: ^8.3.0
-        version: 8.3.0
       mongodb-memory-server:
         specifier: ^11.2.0
         version: 11.2.0
@@ -99,9 +105,6 @@ importers:
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@22.14.0)(@vitest/ui@4.1.10)(vite@8.2.1(@types/node@22.14.0))
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
 
 packages:
 
@@ -860,6 +863,9 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
+
+  dataloader@2.2.3:
+    resolution: {integrity: sha512-y2krtASINtPFS1rSDjacrFgn1dcUuoREVabwlOGOe4SdxenREqwjwjElAdwvbGM7kgZz9a3KVicWR7vcz8rnzA==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -2932,6 +2938,8 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  dataloader@2.2.3: {}
 
   debug@2.6.9:
     dependencies:

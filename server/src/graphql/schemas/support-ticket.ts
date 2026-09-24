@@ -35,8 +35,14 @@ export default gql`
     assigned_agent: ID
   }
 
+  type SupportTicketPage {
+    items: [SupportTicket!]!
+    total: Int!
+    has_more: Boolean!
+  }
+
   type Query {
-    supportTickets: [SupportTicket!]!
+    supportTickets(search: String, limit: Int, offset: Int): SupportTicketPage!
     supportTicket(id: ID!): SupportTicket
   }
 

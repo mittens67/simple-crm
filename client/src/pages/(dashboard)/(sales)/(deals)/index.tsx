@@ -1,94 +1,28 @@
-import { useState } from 'react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useDeals, useCustomers, useUsers } from '../../../../hooks';
-import { useDialog } from '../../../../components/dialogs/DialogProvider';
+import { useResourcePage } from '../../../../hooks/use-resource-page';
 import type { Deal, DealInput } from '../../../../types/deal';
 import LoadingSpinner from '../../../../components/ui/loading-spinner';
+import Pagination from '../../../../components/ui/pagination';
 import DealModal from './deal-modal';
 import '../(leads)/leads.scss';
 
 const Deals = () => {
   const { can } = useAuth();
-  const { deals, loading, create, update, delete: deleteDeal, setError: setDeals_error } = useDeals();
-  const { customers } = useCustomers();
-  const { users } = useUsers();
-  const { showAlert, showConfirm } = useDialog();
-  const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<Deal | null>(null);
-  const [search_input, set_search_input] = useState('');
+  const deals = useDeals();
+  const { items: customers } = useCustomers();
+  const { items: users } = useUsers();
 
-  const query = search_input.toLowerCase();
-  const filtered_deals = deals.filter(
-    (deal) =>
-      deal.title.toLowerCase().includes(query) ||
-      (deal.customer?.name ?? '').toLowerCase().includes(query)
-  );
+  const page = useResourcePage<Deal, DealInput>({ crud: deals, noun: 'deal' });
 
-  const handle_create = async (input: DealInput) => {
-    try {
-      await create(input);
-      set_modal_open(false);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to create deal';
-      setDeals_error(error_msg);
-      await showAlert('Error', `Error creating deal: ${error_msg}`);
-    }
-  };
-
-  const handle_update = async (input: DealInput) => {
-    if (!editing) return;
-    try {
-      await update(editing.id, input);
-      set_modal_open(false);
-      set_editing(null);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to update deal';
-      setDeals_error(error_msg);
-      await showAlert('Error', `Error updating deal: ${error_msg}`);
-    }
-  };
-
-  const handle_delete = async (id: string) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Deal',
-      message: 'Are you sure you want to delete this deal?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-    if (confirmed) {
-      try {
-        await deleteDeal(id);
-      } catch (err) {
-        const error_msg = err instanceof Error ? err.message : 'Failed to delete deal';
-        setDeals_error(error_msg);
-        await showAlert('Error', `Error deleting deal: ${error_msg}`);
-      }
-    }
-  };
-
-  const handle_open_create = () => {
-    set_editing(null);
-    set_modal_open(true);
-  };
-
-  const handle_open_edit = (deal: Deal) => {
-    set_editing(deal);
-    set_modal_open(true);
-  };
-
-  const handle_close_modal = () => {
-    set_modal_open(false);
-    set_editing(null);
-  };
-
-  if (loading) return <LoadingSpinner />;
+  if (deals.loading && deals.items.length === 0) return <LoadingSpinner />;
 
   return (
     <div className="leads">
       <div className="leads-header">
         <h1>Deals</h1>
         {can('deals.create') && (
-          <button className="btn-primary" onClick={handle_open_create}>
+          <button className="btn-primary" onClick={page.open_create}>
             + New Deal
           </button>
         )}
@@ -97,10 +31,9 @@ const Deals = () => {
       <div className="leads-search">
         <input
           type="text"
-          placeholder="Search deals..."
-          value={search_input}
-          onChange={(e) => set_search_input(e.target.value)}
-          disabled={loading}
+          placeholder="Search deals by title or stage..."
+          value={page.search_input}
+          onChange={(e) => page.set_search_input(e.target.value)}
         />
       </div>
 
@@ -117,7 +50,14 @@ const Deals = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered_deals.map((deal) => (
+          {deals.items.length === 0 && (
+            <tr>
+              <td colSpan={7} className="table-empty">
+                {page.search_input ? 'No deals match that search.' : 'No deals yet.'}
+              </td>
+            </tr>
+          )}
+          {deals.items.map((deal) => (
             <tr key={deal.id}>
               <td>{deal.title}</td>
               <td>{deal.customer?.name || '-'}</td>
@@ -125,18 +65,16 @@ const Deals = () => {
               <td>${(deal.value ?? 0).toLocaleString()}</td>
               <td>{deal.stage || '-'}</td>
               <td>
-                <span className={`status status-${deal.status.toLowerCase()}`}>
-                  {deal.status}
-                </span>
+                <span className={`status status-${deal.status.toLowerCase()}`}>{deal.status}</span>
               </td>
               <td className="actions">
                 {can('deals.update') && (
-                  <button className="btn-small" onClick={() => handle_open_edit(deal)}>
+                  <button className="btn-small" onClick={() => page.open_edit(deal)}>
                     Edit
                   </button>
                 )}
                 {can('deals.delete') && (
-                  <button className="btn-small btn-danger" onClick={() => handle_delete(deal.id)}>
+                  <button className="btn-small btn-danger" onClick={() => page.remove(deal.id)}>
                     Delete
                   </button>
                 )}
@@ -146,13 +84,21 @@ const Deals = () => {
         </tbody>
       </table>
 
-      {modal_open && (
+      <Pagination
+        offset={deals.offset}
+        limit={deals.limit}
+        total={deals.total}
+        on_previous={deals.previous_page}
+        on_next={deals.next_page}
+      />
+
+      {page.modal_open && (
         <DealModal
-          deal={editing}
+          deal={page.editing}
           customers={customers}
           users={users}
-          on_save={editing ? handle_update : handle_create}
-          on_close={handle_close_modal}
+          on_save={page.submit}
+          on_close={page.close_modal}
         />
       )}
     </div>

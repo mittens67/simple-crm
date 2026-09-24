@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { BASE_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
 export interface ISupportTicket extends Document {
   customer_id: Types.ObjectId; // Ref to Customer
@@ -33,7 +34,12 @@ const SupportTicketSchema = new Schema<ISupportTicket>(
     issue_summary: { type: String, required: true },
     internal_notes: { type: String }, // Optional field
   },
-  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
+  BASE_SCHEMA_OPTIONS
 );
+
+add_indexes(SupportTicketSchema, {
+  owner_fields: ['assigned_agent'],
+  searchable: ['customer_id', 'status'],
+});
 
 export default mongoose.model<ISupportTicket>('SupportTicket', SupportTicketSchema);

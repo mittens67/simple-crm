@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { APPEND_ONLY_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
 export interface IActivityLog extends Document {
   user_id: Types.ObjectId;       // Ref to User
@@ -23,9 +24,11 @@ const ActivityLogSchema = new Schema<IActivityLog>(
       default: {},
     },
   },
-  {
-    timestamps: { createdAt: 'created_at', updatedAt: false },
-  }
+  APPEND_ONLY_SCHEMA_OPTIONS
 );
+
+add_indexes(ActivityLogSchema, {
+  owner_fields: ['user_id'],
+});
 
 export default mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);

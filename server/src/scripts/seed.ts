@@ -19,13 +19,35 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
     name: 'Admin',
     permissions: { '*': true },
   },
+  // A rep works their own book of business: no `.all` scopes, so lists are
+  // filtered to the records assigned to them.
   {
     name: 'Sales',
+    permissions: {
+      'users.read': true,
+      'leads.read': true,
+      'leads.create': true,
+      'leads.update': true,
+      'leads.delete': true,
+      'customers.read': true,
+      'customers.create': true,
+      'customers.update': true,
+      'deals.read': true,
+      'deals.create': true,
+      'deals.update': true,
+      'deals.delete': true,
+      'activity_logs.create': true,
+    },
+  },
+  // A manager sees and edits the whole team's pipeline via the `.all` scopes.
+  {
+    name: 'Sales Manager',
     permissions: {
       'users.read': true,
       'leads.*': true,
       'customers.*': true,
       'deals.*': true,
+      'activity_logs.read': true,
       'activity_logs.create': true,
     },
   },
@@ -33,9 +55,16 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
     name: 'Support',
     permissions: {
       'users.read': true,
-      'support_tickets.*': true,
-      'support_notes.*': true,
+      'support_tickets.read': true,
+      'support_tickets.create': true,
+      'support_tickets.update': true,
+      'support_tickets.delete': true,
+      'support_notes.read': true,
+      'support_notes.create': true,
+      'support_notes.update': true,
+      'support_notes.delete': true,
       'customers.read': true,
+      'customers.read.all': true,
       'activity_logs.create': true,
     },
   },
@@ -55,14 +84,17 @@ const demo_password = () => {
 interface TeamMember {
   email: string;
   name: string;
-  role: 'Sales' | 'Support';
+  role: 'Sales' | 'Sales Manager' | 'Support';
 }
 
 const TEAM: TeamMember[] = [
   { email: 'demo-sales@example.com', name: 'Demo Sales Rep', role: 'Sales' },
   { email: 'demo-support@example.com', name: 'Demo Support Agent', role: 'Support' },
-  // A few colleagues so ownership is distributed and per-rep reporting has
-  // more than one bar to draw.
+  // Demonstrates the `.all` scopes: the manager sees every rep's records
+  // where a rep sees only their own.
+  { email: 'demo-manager@example.com', name: 'Demo Sales Manager', role: 'Sales Manager' },
+  // Colleagues so ownership is distributed and per-rep reporting has more
+  // than one bar to draw.
   { email: 'priya.iyer@example.com', name: 'Priya Iyer', role: 'Sales' },
   { email: 'tom.bergstrom@example.com', name: 'Tom Bergstrom', role: 'Sales' },
   { email: 'ana.moreau@example.com', name: 'Ana Moreau', role: 'Support' },
@@ -129,7 +161,10 @@ const seed = async () => {
 
   for (const member of TEAM) {
     const id = await upsert_user(member, password);
-    (member.role === 'Sales' ? sales_rep_ids : support_agent_ids).push(id);
+    // Managers see everything through the `.all` scopes rather than owning
+    // records, so they are deliberately excluded from both ownership pools.
+    if (member.role === 'Sales') sales_rep_ids.push(id);
+    else if (member.role === 'Support') support_agent_ids.push(id);
   }
 
   if (reset) {

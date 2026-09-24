@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { BASE_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
 export interface IDeal extends Document {
   title: string;
@@ -32,7 +33,12 @@ const DealSchema = new Schema<IDeal>(
     },
     stage: { type: String, required: true }, // You can also convert this to enum if stages are standardized
   },
-  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
+  BASE_SCHEMA_OPTIONS
 );
+
+add_indexes(DealSchema, {
+  owner_fields: ['owner_id'],
+  searchable: ['customer_id', 'status', 'stage'],
+});
 
 export default mongoose.model<IDeal>('Deal', DealSchema);
