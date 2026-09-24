@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import mongoose, { Types } from 'mongoose';
+import { describe, it, expect, beforeEach } from 'vitest';
+
 import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import User from '../../models/user';

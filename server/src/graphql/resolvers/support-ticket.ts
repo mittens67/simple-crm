@@ -78,6 +78,17 @@ export default {
         ticket.assigned_agent = new Types.ObjectId(input.assigned_agent);
       }
 
+      if (input.customer_id) {
+        const customer_exists = await Customer.findById(input.customer_id);
+        if (!customer_exists) {
+          throw new GraphQLError('Customer not found', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
+        ticket.customer_id = new Types.ObjectId(input.customer_id);
+      }
+
+      if (input.issue_summary) ticket.issue_summary = input.issue_summary;
       if (input.status) ticket.status = input.status;
       if (input.internal_notes !== undefined)
         ticket.internal_notes = input.internal_notes;

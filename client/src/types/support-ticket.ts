@@ -1,41 +1,27 @@
 import type { TicketStatus } from './common';
 
+interface TicketParty {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface SupportTicket {
   id: string;
-  title: string;
-  description: string;
   customer_id?: string;
-  customer?: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  customer?: TicketParty;
+  assigned_agent?: TicketParty;
   status: TicketStatus;
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-  assigned_rep_id?: string;
-  assigned_rep?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  resolution?: string;
+  issue_summary: string;
+  internal_notes?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface SupportTicketInput {
-  title: string;
-  description: string;
-  customer_id?: string;
+  customer_id: string;
+  assigned_agent?: string | null;
+  issue_summary: string;
   status?: TicketStatus;
-  priority?: 'Low' | 'Medium' | 'High' | 'Urgent';
-  assigned_rep_id?: string | null;
-  resolution?: string;
-}
-
-export interface SupportTicketsResponse {
-  supportTickets: {
-    data: SupportTicket[];
-    total: number;
-  };
+  internal_notes?: string;
 }

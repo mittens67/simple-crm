@@ -23,7 +23,12 @@ export default {
       require_permission(context, 'roles.read');
       return await Role.findById(id);
     },
-    permissionCatalog: () => PERMISSION_CATALOG,
+    permissionCatalog: (_: any, __: any, context: ApolloContext) => {
+      // The catalog describes the whole authorization model, so it is only for
+      // people who can actually administer roles.
+      require_permission(context, 'roles.read');
+      return PERMISSION_CATALOG;
+    },
   },
   Mutation: {
     createRole: async (_: any, { input }: any, context: ApolloContext) => {

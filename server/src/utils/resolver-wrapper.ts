@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import { ApolloContext } from '../graphql/context';
 import { format_error } from './errors';
 

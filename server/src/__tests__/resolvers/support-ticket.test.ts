@@ -12,7 +12,6 @@ import supportTicketResolvers from '../../graphql/resolvers/support-ticket';
 let support_role: any;
 let admin_role: any;
 let test_user: any;
-let test_admin: any;
 let test_customer: any;
 let test_agent: any;
 
@@ -42,7 +41,7 @@ beforeAll(async () => {
     is_active: true,
   });
 
-  test_admin = await User.create({
+  await User.create({
     name: 'Admin User',
     email: 'admin@example.com',
     password: password_hash,
@@ -82,7 +81,7 @@ describe('Support Ticket Resolver', () => {
         customer_id: test_customer._id,
         assigned_agent: test_agent._id,
         issue_summary: 'Test Issue 2',
-        status: 'In Progress',
+        status: 'InProgress',
       });
 
       const context = mock_context(test_user, support_role) as any as ApolloContext;

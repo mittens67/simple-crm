@@ -1,16 +1,7 @@
 import { gql } from '@apollo/client';
 
-export const USER_FIELDS = `
-  id
-  name
-  email
-  theme_preference
-  role {
-    id
-    name
-    permissions
-  }
-`;
+// The authoritative user selection set lives in lib/auth.ts, which is where
+// login and refresh consume it.
 
 // Leads
 export const LEADS_QUERY = gql`
@@ -37,31 +28,6 @@ export const LEADS_QUERY = gql`
         updated_at
       }
       total
-    }
-  }
-`;
-
-export const LEAD_QUERY = gql`
-  query GetLead($id: ID!) {
-    lead(id: $id) {
-      id
-      name
-      email
-      phone
-      status
-      assigned_rep {
-        id
-        name
-        email
-      }
-      customer {
-        id
-        name
-      }
-      sales_notes
-      archive_notes
-      created_at
-      updated_at
     }
   }
 `;
@@ -128,24 +94,6 @@ export const DELETE_LEAD_MUTATION = gql`
 export const CUSTOMERS_QUERY = gql`
   query GetCustomers {
     customers {
-      id
-      name
-      email
-      phone
-      assigned_rep {
-        id
-        name
-        email
-      }
-      created_at
-      updated_at
-    }
-  }
-`;
-
-export const CUSTOMER_QUERY = gql`
-  query GetCustomer($id: ID!) {
-    customer(id: $id) {
       id
       name
       email
@@ -228,30 +176,6 @@ export const DEALS_QUERY = gql`
   }
 `;
 
-export const DEAL_QUERY = gql`
-  query GetDeal($id: ID!) {
-    deal(id: $id) {
-      id
-      title
-      customer {
-        id
-        name
-        email
-      }
-      owner {
-        id
-        name
-        email
-      }
-      value
-      status
-      stage
-      created_at
-      updated_at
-    }
-  }
-`;
-
 export const CREATE_DEAL_MUTATION = gql`
   mutation CreateDeal($input: CreateDealInput!) {
     createDeal(input: $input) {
@@ -310,29 +234,6 @@ export const DELETE_DEAL_MUTATION = gql`
 export const SUPPORT_TICKETS_QUERY = gql`
   query GetSupportTickets {
     supportTickets {
-      id
-      customer {
-        id
-        name
-        email
-      }
-      assigned_agent {
-        id
-        name
-        email
-      }
-      status
-      issue_summary
-      internal_notes
-      created_at
-      updated_at
-    }
-  }
-`;
-
-export const SUPPORT_TICKET_QUERY = gql`
-  query GetSupportTicket($id: ID!) {
-    supportTicket(id: $id) {
       id
       customer {
         id

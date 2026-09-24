@@ -23,7 +23,7 @@ export default gql`
   input CreateDealInput {
     title: String!
     customer_id: ID!
-    owner_id: ID
+    owner_id: ID!
     value: Float!
     status: DealStatus
     stage: String!

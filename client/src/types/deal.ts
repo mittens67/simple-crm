@@ -1,45 +1,30 @@
 import type { DealStatus } from './common';
 
+interface DealParty {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Deal {
   id: string;
   title: string;
-  description?: string;
   customer_id: string;
-  customer?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  amount: number;
+  customer?: DealParty;
+  owner_id?: string;
+  owner?: DealParty;
+  value: number;
   status: DealStatus;
-  assigned_rep_id?: string;
-  assigned_rep?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  expected_close_date?: string;
-  close_date?: string;
-  notes?: string;
+  stage: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface DealInput {
   title: string;
-  description?: string;
   customer_id: string;
-  amount: number;
+  owner_id?: string | null;
+  value: number;
   status?: DealStatus;
-  assigned_rep_id?: string | null;
-  expected_close_date?: string;
-  close_date?: string;
-  notes?: string;
-}
-
-export interface DealsResponse {
-  deals: {
-    data: Deal[];
-    total: number;
-  };
+  stage: string;
 }

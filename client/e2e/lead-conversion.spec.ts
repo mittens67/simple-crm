@@ -1,44 +1,37 @@
 import { test, expect } from '@playwright/test';
+import { login_as, DEMO_SALES } from './helpers';
 
-test('lead creation and conversion to customer', async ({ page }) => {
-  // Login as demo-sales
-  await page.goto('/');
-  await page.fill('input[type="email"]', 'demo-sales@example.com');
-  await page.fill('input[type="password"]', 'Demo123');
-  await page.click('button[type="submit"]');
-  await page.waitForURL('/dashboard', { waitUntil: 'networkidle' });
+test('a lead can be created and then converted into a customer', async ({ page }) => {
+  await login_as(page, DEMO_SALES);
 
-  // Navigate to leads page
-  await page.goto('/dashboard/sales/leads');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/leads');
+  await expect(page.getByRole('heading', { name: /^Leads$/i })).toBeVisible();
 
-  // Click "New Lead" button
-  await page.click('button:has-text("+ New Lead")');
+  const stamp = Date.now();
+  const lead_name = `Test Lead ${stamp}`;
 
-  // Fill lead form
-  const lead_name = `Test Lead ${Date.now()}`;
+  // Leads are always created Open — the server's create schema pins the status
+  // and conversion happens through an update.
+  await page.getByRole('button', { name: /New Lead/i }).click();
   await page.fill('input[name="name"]', lead_name);
-  await page.fill('input[name="email"]', `lead-${Date.now()}@test.com`);
+  await page.fill('input[name="email"]', `lead-${stamp}@test.com`);
   await page.fill('input[name="phone"]', '555-0123');
+  await page.getByRole('button', { name: /^Create$/ }).click();
 
-  // Change status to Converted
-  await page.selectOption('select[name="status"]', 'Converted');
-
-  // Submit form
-  await page.click('button[type="submit"]:has-text("Create")');
-
-  // Wait for modal to close and table to update
-  await page.waitForTimeout(500);
-  await page.reload();
-  await page.waitForLoadState('networkidle');
-
-  // Verify the lead appears in the table with "Converted To" showing a customer name
-  const lead_row = page.locator(`text=${lead_name}`).locator('..').locator('..');
+  const lead_row = page.getByRole('row', { name: new RegExp(lead_name) });
   await expect(lead_row).toBeVisible();
 
-  // Check that Converted To column has a customer name (not just "-")
-  const converted_to_cell = lead_row.locator('td').nth(5); // "Converted To" is the 6th column (0-indexed)
-  const cell_text = await converted_to_cell.textContent();
-  expect(cell_text).not.toBe('-');
-  expect(cell_text?.trim().length).toBeGreaterThan(0);
+  // Convert it.
+  await lead_row.getByRole('button', { name: /^Edit$/ }).click();
+  await page.selectOption('select[name="status"]', 'Converted');
+  await page.getByRole('button', { name: /^Update$/ }).click();
+
+  // Converting auto-creates a Customer and back-links it, so the
+  // "Converted To" cell must name that customer rather than showing a dash.
+  const converted_row = page.getByRole('row', { name: new RegExp(lead_name) });
+  await expect(converted_row).toContainText('Converted');
+
+  const converted_to = converted_row.locator('td').nth(5);
+  await expect(converted_to).not.toHaveText('-');
+  await expect(converted_to).toContainText(/\S/);
 });

@@ -21,13 +21,15 @@ export default gql`
 
   input CreateSupportTicketInput {
     customer_id: ID!
-    assigned_agent: ID
+    assigned_agent: ID!
     issue_summary: String!
     status: SupportStatus
     internal_notes: String
   }
 
   input UpdateSupportTicketInput {
+    customer_id: ID
+    issue_summary: String
     status: SupportStatus
     internal_notes: String
     assigned_agent: ID

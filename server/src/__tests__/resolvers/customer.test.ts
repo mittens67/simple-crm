@@ -11,7 +11,6 @@ import customerResolvers from '../../graphql/resolvers/customer';
 let sales_role: any;
 let admin_role: any;
 let test_user: any;
-let test_admin: any;
 
 beforeAll(async () => {
   // Create roles
@@ -39,7 +38,7 @@ beforeAll(async () => {
     is_active: true,
   });
 
-  test_admin = await User.create({
+  await User.create({
     name: 'Admin User',
     email: 'admin@example.com',
     password: password_hash,

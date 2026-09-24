@@ -5,7 +5,7 @@ import { useAuth } from '../../../../auth/auth-context';
 import '../../(sales)/(leads)/leads.scss';
 
 const USERS_QUERY = gql`
-  query GetUsers {
+  query GetUsersForAdmin {
     users {
       id
       name
@@ -20,7 +20,7 @@ const USERS_QUERY = gql`
 `;
 
 const ROLES_QUERY = gql`
-  query GetRoles {
+  query GetRoleOptions {
     roles {
       id
       name

@@ -12,7 +12,6 @@ let activity_role: any;
 let admin_role: any;
 let test_user: any;
 let test_user_2: any;
-let test_admin: any;
 
 beforeAll(async () => {
   activity_role = await Role.create({
@@ -46,7 +45,7 @@ beforeAll(async () => {
     is_active: true,
   });
 
-  test_admin = await User.create({
+  await User.create({
     name: 'Admin User',
     email: 'admin@example.com',
     password: password_hash,

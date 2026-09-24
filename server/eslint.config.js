@@ -11,6 +11,13 @@ export default tseslint.config(
       ecmaVersion: 2020,
       globals: globals.node,
     },
-    rules: {},
+    rules: {
+      // The GraphQL resolver boundary is currently untyped, which accounts for
+      // almost every occurrence of `any` in this package. GraphQL codegen
+      // removes them wholesale; until then this stays a warning so that CI can
+      // enforce the rules that are already clean. Restore to 'error' once
+      // codegen lands.
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
   },
 )

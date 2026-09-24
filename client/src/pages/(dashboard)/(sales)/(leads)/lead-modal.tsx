@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Lead, LeadInput } from '../../../../types/lead';
+import type { LeadStatus } from '../../../../types/common';
 
 interface User {
   id: string;
@@ -51,7 +52,7 @@ const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
       name,
       email,
       phone,
-      status: status as any,
+      status: status as LeadStatus,
       ...(assigned_rep_id && { assigned_rep_id }),
       ...(sales_notes && { sales_notes }),
       ...(archive_notes && { archive_notes }),

@@ -6,7 +6,7 @@ import '../../(sales)/(leads)/leads.scss';
 import './roles.scss';
 
 const ROLES_QUERY = gql`
-  query GetRoles {
+  query GetRolesWithPermissions {
     roles {
       id
       name

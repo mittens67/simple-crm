@@ -6,5 +6,15 @@ import customer from './schemas/customer';
 import deal from './schemas/deal';
 import supportTicket from './schemas/support-ticket';
 import supportNote from './schemas/support-note';
+import activityLog from './schemas/activity-log';
 
-export const typeDefs = mergeTypeDefs([user, role, lead, customer, deal, supportTicket, supportNote]);
+export const typeDefs = mergeTypeDefs([
+  user,
+  role,
+  lead,
+  customer,
+  deal,
+  supportTicket,
+  supportNote,
+  activityLog,
+]);

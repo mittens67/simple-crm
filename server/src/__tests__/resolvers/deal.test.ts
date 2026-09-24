@@ -10,7 +10,6 @@ import type { ApolloContext } from '../../graphql/context';
 import dealResolvers from '../../graphql/resolvers/deal';
 
 let sales_role: any;
-let admin_role: any;
 let test_user: any;
 let test_customer: any;
 
@@ -24,7 +23,7 @@ beforeAll(async () => {
     },
   });
 
-  admin_role = await Role.create({
+  await Role.create({
     name: 'Admin',
     permissions: { '*': true },
   });

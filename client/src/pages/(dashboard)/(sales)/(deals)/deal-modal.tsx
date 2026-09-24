@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Deal, DealInput } from '../../../../types/deal';
+import { DEAL_STAGES, DEAL_STATUSES } from '../../../../types/common';
 
 interface Customer {
   id: string;
@@ -19,64 +20,52 @@ interface DealModalProps {
   on_close: () => void;
 }
 
+const empty_form = {
+  title: '',
+  customer_id: '',
+  owner_id: '',
+  value: '',
+  status: 'Open',
+  stage: DEAL_STAGES[0] as string,
+};
+
 const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps) => {
-  const [form_data, set_form_data] = useState({
-    title: '',
-    description: '',
-    customer_id: '',
-    assigned_rep_id: '',
-    amount: '',
-    status: 'Open',
-    expected_close_date: '',
-    notes: '',
-  });
+  const [form_data, set_form_data] = useState(empty_form);
 
   useEffect(() => {
-    if (deal) {
-      set_form_data({
-        title: deal.title,
-        description: deal.description || '',
-        customer_id: deal.customer_id,
-        assigned_rep_id: deal.assigned_rep_id || '',
-        amount: String(deal.amount),
-        status: deal.status || 'Open',
-        expected_close_date: deal.expected_close_date || '',
-        notes: deal.notes || '',
-      });
+    if (!deal) {
+      set_form_data(empty_form);
+      return;
     }
+    set_form_data({
+      title: deal.title,
+      customer_id: deal.customer?.id || deal.customer_id,
+      owner_id: deal.owner?.id || deal.owner_id || '',
+      value: String(deal.value),
+      status: deal.status || 'Open',
+      stage: deal.stage || DEAL_STAGES[0],
+    });
   }, [deal]);
 
-  const handle_change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handle_change = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     set_form_data((prev) => ({ ...prev, [name]: value }));
   };
 
   const handle_submit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (deal) {
-      const partial_input: Partial<DealInput> = {};
-      if (form_data.title) partial_input.title = form_data.title;
-      if (form_data.description) partial_input.description = form_data.description;
-      if (form_data.customer_id) partial_input.customer_id = form_data.customer_id;
-      if (form_data.assigned_rep_id) partial_input.assigned_rep_id = form_data.assigned_rep_id;
-      if (form_data.amount) partial_input.amount = parseFloat(form_data.amount);
-      if (form_data.status) partial_input.status = form_data.status as Deal['status'];
-      if (form_data.expected_close_date) partial_input.expected_close_date = form_data.expected_close_date;
-      if (form_data.notes) partial_input.notes = form_data.notes;
-      on_save(partial_input as DealInput);
-    } else {
-      on_save({
-        title: form_data.title,
-        description: form_data.description || undefined,
-        customer_id: form_data.customer_id,
-        assigned_rep_id: form_data.assigned_rep_id || undefined,
-        amount: parseFloat(form_data.amount),
-        status: form_data.status as Deal['status'],
-        expected_close_date: form_data.expected_close_date || undefined,
-        notes: form_data.notes || undefined,
-      });
-    }
+    on_save({
+      title: form_data.title,
+      customer_id: form_data.customer_id,
+      // The server requires an owner, so fall back to nothing only on edit,
+      // where the existing owner is preserved.
+      owner_id: form_data.owner_id || null,
+      value: parseFloat(form_data.value),
+      status: form_data.status as Deal['status'],
+      stage: form_data.stage,
+    });
   };
 
   return (
@@ -102,16 +91,6 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
           </div>
 
           <div className="form-group">
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={form_data.description}
-              onChange={handle_change}
-              rows={3}
-            />
-          </div>
-
-          <div className="form-group">
             <label>Customer *</label>
             <select
               name="customer_id"
@@ -129,25 +108,22 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
           </div>
 
           <div className="form-group">
-            <label>Amount *</label>
+            <label>Value *</label>
             <input
               type="number"
-              name="amount"
-              value={form_data.amount}
+              name="value"
+              value={form_data.value}
               onChange={handle_change}
               step="0.01"
+              min="0"
               required
             />
           </div>
 
           <div className="form-group">
-            <label>Assigned Rep</label>
-            <select
-              name="assigned_rep_id"
-              value={form_data.assigned_rep_id}
-              onChange={handle_change}
-            >
-              <option value="">Unassigned</option>
+            <label>Owner *</label>
+            <select name="owner_id" value={form_data.owner_id} onChange={handle_change} required>
+              <option value="">Select an owner</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
@@ -157,33 +133,25 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
           </div>
 
           <div className="form-group">
-            <label>Expected Close Date</label>
-            <input
-              type="date"
-              name="expected_close_date"
-              value={form_data.expected_close_date}
-              onChange={handle_change}
-            />
+            <label>Stage *</label>
+            <select name="stage" value={form_data.stage} onChange={handle_change} required>
+              {DEAL_STAGES.map((stage) => (
+                <option key={stage} value={stage}>
+                  {stage}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">
             <label>Status</label>
             <select name="status" value={form_data.status} onChange={handle_change}>
-              <option value="Open">Open</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-              <option value="Pending">Pending</option>
+              {DEAL_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
             </select>
-          </div>
-
-          <div className="form-group">
-            <label>Notes</label>
-            <textarea
-              name="notes"
-              value={form_data.notes}
-              onChange={handle_change}
-              rows={3}
-            />
           </div>
 
           <div className="modal-actions">

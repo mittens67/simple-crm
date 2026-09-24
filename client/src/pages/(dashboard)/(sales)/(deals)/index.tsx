@@ -17,9 +17,11 @@ const Deals = () => {
   const [editing, set_editing] = useState<Deal | null>(null);
   const [search_input, set_search_input] = useState('');
 
-  const filtered_deals = deals.filter((deal) =>
-    deal.title.toLowerCase().includes(search_input.toLowerCase()) ||
-    deal.customer?.name.toLowerCase().includes(search_input.toLowerCase())
+  const query = search_input.toLowerCase();
+  const filtered_deals = deals.filter(
+    (deal) =>
+      deal.title.toLowerCase().includes(query) ||
+      (deal.customer?.name ?? '').toLowerCase().includes(query)
   );
 
   const handle_create = async (input: DealInput) => {
@@ -107,10 +109,10 @@ const Deals = () => {
           <tr>
             <th>Title</th>
             <th>Customer</th>
-            <th>Rep</th>
-            <th>Amount</th>
+            <th>Owner</th>
+            <th>Value</th>
+            <th>Stage</th>
             <th>Status</th>
-            <th>Expected Close</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -119,14 +121,14 @@ const Deals = () => {
             <tr key={deal.id}>
               <td>{deal.title}</td>
               <td>{deal.customer?.name || '-'}</td>
-              <td>{deal.assigned_rep?.name || 'Unassigned'}</td>
-              <td>${deal.amount.toLocaleString()}</td>
+              <td>{deal.owner?.name || 'Unassigned'}</td>
+              <td>${(deal.value ?? 0).toLocaleString()}</td>
+              <td>{deal.stage || '-'}</td>
               <td>
                 <span className={`status status-${deal.status.toLowerCase()}`}>
                   {deal.status}
                 </span>
               </td>
-              <td>{deal.expected_close_date || '-'}</td>
               <td className="actions">
                 {can('deals.update') && (
                   <button className="btn-small" onClick={() => handle_open_edit(deal)}>

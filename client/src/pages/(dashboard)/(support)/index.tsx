@@ -3,6 +3,7 @@ import { useAuth } from '../../../auth/auth-context';
 import { useSupportTickets, useCustomers, useUsers } from '../../../hooks';
 import { useDialog } from '../../../components/dialogs/DialogProvider';
 import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
+import { TICKET_STATUS_LABELS } from '../../../types/common';
 import LoadingSpinner from '../../../components/ui/loading-spinner';
 import SupportTicketModal from './support-ticket-modal';
 import '../(sales)/(leads)/leads.scss';
@@ -17,9 +18,11 @@ const Support = () => {
   const [editing, set_editing] = useState<SupportTicket | null>(null);
   const [search_input, set_search_input] = useState('');
 
-  const filtered_tickets = tickets.filter((ticket) =>
-    ticket.title.toLowerCase().includes(search_input.toLowerCase()) ||
-    ticket.customer?.name.toLowerCase().includes(search_input.toLowerCase())
+  const query = search_input.toLowerCase();
+  const filtered_tickets = tickets.filter(
+    (ticket) =>
+      ticket.issue_summary.toLowerCase().includes(query) ||
+      (ticket.customer?.name ?? '').toLowerCase().includes(query)
   );
 
   const handle_create = async (input: SupportTicketInput) => {
@@ -105,10 +108,9 @@ const Support = () => {
       <table className="leads-table">
         <thead>
           <tr>
-            <th>Title</th>
+            <th>Issue</th>
             <th>Customer</th>
-            <th>Assigned Rep</th>
-            <th>Priority</th>
+            <th>Assigned Agent</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -116,13 +118,12 @@ const Support = () => {
         <tbody>
           {filtered_tickets.map((ticket) => (
             <tr key={ticket.id}>
-              <td>{ticket.title}</td>
+              <td>{ticket.issue_summary}</td>
               <td>{ticket.customer?.name || '-'}</td>
-              <td>{ticket.assigned_rep?.name || 'Unassigned'}</td>
-              <td>{ticket.priority}</td>
+              <td>{ticket.assigned_agent?.name || 'Unassigned'}</td>
               <td>
                 <span className={`status status-${ticket.status.toLowerCase()}`}>
-                  {ticket.status}
+                  {TICKET_STATUS_LABELS[ticket.status]}
                 </span>
               </td>
               <td className="actions">

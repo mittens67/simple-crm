@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/user';
-import Role, { IRole } from '../models/role';
+import { IRole } from '../models/role';
 import { verify_access_token } from '../auth/tokens';
 
 export interface ApolloContext {

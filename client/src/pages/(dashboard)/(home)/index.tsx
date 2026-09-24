@@ -58,10 +58,11 @@ const Home = () => {
   const deals = (deals_data?.deals || []) as Deal[];
   const tickets = (tickets_data?.supportTickets || []) as Ticket[];
 
-  const total_deal_value = deals.reduce((sum: number, deal) => sum + deal.value, 0);
+  const total_deal_value = deals.reduce((sum: number, deal) => sum + (deal.value ?? 0), 0);
   const open_tickets = tickets.filter((t) => t.status === 'Open').length;
   const won_deals = deals.filter((d) => d.status === 'Won').length;
-  const qualified_leads = leads.filter((l) => l.status === 'Qualified').length;
+  // 'Pending' means a rep has been assigned and is working the lead.
+  const pending_leads = leads.filter((l) => l.status === 'Pending').length;
 
   const stats: Card[] = [
     {
@@ -135,8 +136,8 @@ const Home = () => {
           <h2>Quick Stats</h2>
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-label">Qualified Leads</span>
-              <span className="stat-number">{qualified_leads}</span>
+              <span className="stat-label">Leads In Progress</span>
+              <span className="stat-number">{pending_leads}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Won Deals</span>
