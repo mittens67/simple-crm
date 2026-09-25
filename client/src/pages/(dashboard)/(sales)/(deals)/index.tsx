@@ -45,6 +45,7 @@ const Deals = () => {
             <th>Owner</th>
             <th>Value</th>
             <th>Stage</th>
+            <th>Days in stage</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -52,7 +53,7 @@ const Deals = () => {
         <tbody>
           {deals.items.length === 0 && (
             <tr>
-              <td colSpan={7} className="table-empty">
+              <td colSpan={8} className="table-empty">
                 {page.search_input ? 'No deals match that search.' : 'No deals yet.'}
               </td>
             </tr>
@@ -63,7 +64,8 @@ const Deals = () => {
               <td>{deal.customer?.name || '-'}</td>
               <td>{deal.owner?.name || 'Unassigned'}</td>
               <td>${(deal.value ?? 0).toLocaleString()}</td>
-              <td>{deal.stage || '-'}</td>
+              <td>{deal.stage?.name || '-'}</td>
+              <td>{deal.days_in_stage}</td>
               <td>
                 <span className={`status status-${deal.status.toLowerCase()}`}>{deal.status}</span>
               </td>

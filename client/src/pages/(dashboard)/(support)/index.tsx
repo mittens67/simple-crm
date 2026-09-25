@@ -47,14 +47,16 @@ const Support = () => {
             <th>Issue</th>
             <th>Customer</th>
             <th>Assigned Agent</th>
+            <th>Priority</th>
             <th>Status</th>
+            <th>SLA</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {tickets.items.length === 0 && (
             <tr>
-              <td colSpan={5} className="table-empty">
+              <td colSpan={7} className="table-empty">
                 {page.search_input ? 'No tickets match that search.' : 'No tickets yet.'}
               </td>
             </tr>
@@ -65,9 +67,23 @@ const Support = () => {
               <td>{ticket.customer?.name || '-'}</td>
               <td>{ticket.assigned_agent?.name || 'Unassigned'}</td>
               <td>
+                <span className={`priority priority-${ticket.priority.toLowerCase()}`}>
+                  {ticket.priority}
+                </span>
+              </td>
+              <td>
                 <span className={`status status-${ticket.status.toLowerCase()}`}>
                   {TICKET_STATUS_LABELS[ticket.status]}
                 </span>
+              </td>
+              <td>
+                {ticket.is_sla_breached ? (
+                  <span className="sla sla-breached" title={`Due ${new Date(ticket.sla_due_at).toLocaleString()}`}>
+                    Breached
+                  </span>
+                ) : (
+                  <span className="sla sla-ok">On track</span>
+                )}
               </td>
               <td className="actions">
                 {can('support_tickets.update') && (

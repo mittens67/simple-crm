@@ -13,6 +13,8 @@ import User from '../../models/user';
 import Role from '../../models/role';
 import type { IUser } from '../../models/user';
 import type { IRole } from '../../models/role';
+import type { IPipeline } from '../../models/pipeline';
+import { create_test_pipeline, first_open_stage } from '../helpers/pipeline';
 
 /**
  * Counts queries by entity so the batching claim is measured, not asserted by
@@ -29,6 +31,7 @@ const record = (event: { commandName: string; command: Record<string, unknown> }
 
 let manager: IUser;
 let manager_role: IRole;
+let pipeline: IPipeline;
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 
 const ROW_COUNT = 12;
@@ -41,6 +44,8 @@ beforeAll(async () => {
     password: 'password123',
     role_ids: [manager_role._id],
   });
+
+  pipeline = await create_test_pipeline('N+1 Pipeline');
 
   // Distinct owners and customers per row, so batching cannot be mistaken for
   // the DataLoader cache simply de-duplicating one repeated id.
@@ -61,7 +66,9 @@ beforeAll(async () => {
       customer_id: customer._id,
       owner_id: owner._id,
       value: 1000 + i,
-      stage: 'Proposal',
+      pipeline_id: pipeline._id,
+      stage_id: first_open_stage(pipeline)._id,
+      stage_entered_at: new Date(),
     });
   }
 });

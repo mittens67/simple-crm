@@ -149,7 +149,23 @@ export const DEAL_FIELDS = gql`
     }
     value
     status
-    stage
+    pipeline {
+      id
+      name
+    }
+    stage {
+      id
+      name
+      display_order
+      probability
+      outcome
+    }
+    stage_entered_at
+    days_in_stage
+    expected_close_date
+    closed_at
+    lost_reason
+    weighted_value
     created_at
     updated_at
   }
@@ -209,6 +225,12 @@ export const SUPPORT_TICKET_FIELDS = gql`
     status
     issue_summary
     internal_notes
+    priority
+    category
+    sla_due_at
+    first_response_at
+    resolved_at
+    is_sla_breached
     created_at
     updated_at
   }
@@ -272,6 +294,199 @@ export const UPDATE_THEME_MUTATION = gql`
       name
       email
       theme_preference
+    }
+  }
+`;
+
+// --- Pipelines -------------------------------------------------------------
+
+export const STAGE_FIELDS = gql`
+  fragment StageFields on Stage {
+    id
+    name
+    display_order
+    probability
+    outcome
+  }
+`;
+
+export const PIPELINES_QUERY = gql`
+  query GetPipelines {
+    pipelines {
+      id
+      name
+      is_default
+      stages {
+        ...StageFields
+      }
+    }
+  }
+  ${STAGE_FIELDS}
+`;
+
+export const PIPELINE_BOARD_QUERY = gql`
+  query GetPipelineBoard($pipeline_id: ID) {
+    pipelineBoard(pipeline_id: $pipeline_id) {
+      stage {
+        ...StageFields
+      }
+      deal_count
+      total_value
+      deals {
+        ...DealFields
+      }
+    }
+  }
+  ${STAGE_FIELDS}
+  ${DEAL_FIELDS}
+`;
+
+export const MOVE_DEAL_TO_STAGE_MUTATION = gql`
+  mutation MoveDealToStage($id: ID!, $stage_id: ID!) {
+    moveDealToStage(id: $id, stage_id: $stage_id) {
+      ...DealFields
+    }
+  }
+  ${DEAL_FIELDS}
+`;
+
+// --- Activities ------------------------------------------------------------
+
+export const ACTIVITY_FIELDS = gql`
+  fragment ActivityFields on Activity {
+    id
+    type
+    subject
+    body
+    target_type
+    target_id
+    due_at
+    completed_at
+    is_overdue
+    created_at
+    owner {
+      ...PartyFields
+    }
+  }
+  ${PARTY_FIELDS}
+`;
+
+export const ACTIVITIES_QUERY = gql`
+  query GetActivities(
+    $target_type: ActivityTargetType!
+    $target_id: ID!
+    $limit: Int
+    $offset: Int
+  ) {
+    activities(
+      target_type: $target_type
+      target_id: $target_id
+      limit: $limit
+      offset: $offset
+    ) {
+      items {
+        ...ActivityFields
+      }
+      total
+      has_more
+    }
+  }
+  ${ACTIVITY_FIELDS}
+`;
+
+export const TASKS_QUERY = gql`
+  query GetTasks($include_completed: Boolean, $limit: Int, $offset: Int) {
+    tasks(include_completed: $include_completed, limit: $limit, offset: $offset) {
+      items {
+        ...ActivityFields
+      }
+      total
+      has_more
+    }
+  }
+  ${ACTIVITY_FIELDS}
+`;
+
+export const CREATE_ACTIVITY_MUTATION = gql`
+  mutation CreateActivity($input: CreateActivityInput!) {
+    createActivity(input: $input) {
+      ...ActivityFields
+    }
+  }
+  ${ACTIVITY_FIELDS}
+`;
+
+export const COMPLETE_ACTIVITY_MUTATION = gql`
+  mutation CompleteActivity($id: ID!) {
+    completeActivity(id: $id) {
+      ...ActivityFields
+    }
+  }
+  ${ACTIVITY_FIELDS}
+`;
+
+export const REOPEN_ACTIVITY_MUTATION = gql`
+  mutation ReopenActivity($id: ID!) {
+    reopenActivity(id: $id) {
+      ...ActivityFields
+    }
+  }
+  ${ACTIVITY_FIELDS}
+`;
+
+export const DELETE_ACTIVITY_MUTATION = gql`
+  mutation DeleteActivity($id: ID!) {
+    deleteActivity(id: $id)
+  }
+`;
+
+// --- Analytics -------------------------------------------------------------
+
+export const DASHBOARD_QUERY = gql`
+  query GetDashboard($months: Int) {
+    dashboardSummary {
+      total_leads
+      total_customers
+      open_deals
+      open_deal_value
+      weighted_pipeline_value
+      won_value_this_month
+      open_tickets
+      overdue_tasks
+    }
+    pipelineFunnel {
+      stage_id
+      stage_name
+      display_order
+      probability
+      deal_count
+      total_value
+      weighted_value
+      avg_days_in_stage
+    }
+    revenueOverTime(months: $months) {
+      period
+      count
+      value
+    }
+    leadFunnel {
+      status
+      count
+    }
+    repPerformance {
+      user_id
+      name
+      open_deals
+      won_deals
+      lost_deals
+      won_value
+      win_rate
+    }
+    slaSummary {
+      total
+      breached
+      compliance_rate
+      avg_first_response_hours
     }
   }
 `;

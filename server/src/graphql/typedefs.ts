@@ -6,7 +6,10 @@ import customer from './schemas/customer';
 import deal from './schemas/deal';
 import supportTicket from './schemas/support-ticket';
 import supportNote from './schemas/support-note';
-import activityLog from './schemas/activity-log';
+import auditLog from './schemas/audit-log';
+import pipeline from './schemas/pipeline';
+import activity from './schemas/activity';
+import analytics from './schemas/analytics';
 
 export const typeDefs = mergeTypeDefs([
   user,
@@ -16,5 +19,8 @@ export const typeDefs = mergeTypeDefs([
   deal,
   supportTicket,
   supportNote,
-  activityLog,
+  auditLog,
+  pipeline,
+  activity,
+  analytics,
 ]);

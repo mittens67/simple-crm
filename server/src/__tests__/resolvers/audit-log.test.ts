@@ -3,10 +3,10 @@ import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import User from '../../models/user';
 import Role from '../../models/role';
-import ActivityLog from '../../models/activity-log';
+import AuditLog from '../../models/audit-log';
 import { mock_context } from '../helpers/context';
 import type { ApolloContext } from '../../graphql/context';
-import activityLogResolvers from '../../graphql/resolvers/activity-log';
+import auditLogResolvers from '../../graphql/resolvers/audit-log';
 
 let activity_role: any;
 let admin_role: any;
@@ -17,8 +17,8 @@ beforeAll(async () => {
   activity_role = await Role.create({
     name: 'ActivityLogger',
     permissions: {
-      'activity_logs.read': true,
-      'activity_logs.create': true,
+      'audit_logs.read': true,
+      'audit_logs.create': true,
     },
   });
 
@@ -55,25 +55,25 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await ActivityLog.deleteMany({});
+  await AuditLog.deleteMany({});
 });
 
 describe('Activity Log Resolver', () => {
-  describe('activityLogs query', () => {
-    it('returns all activity logs with activity_logs.read permission', async () => {
-      await ActivityLog.create({
+  describe('auditLogs query', () => {
+    it('returns all activity logs with audit_logs.read permission', async () => {
+      await AuditLog.create({
         user_id: test_user._id,
         action: 'viewed_customer',
         metadata: { customer_id: '123' },
       });
-      await ActivityLog.create({
+      await AuditLog.create({
         user_id: test_user_2._id,
         action: 'created_deal',
         metadata: { deal_id: '456' },
       });
 
       const context = mock_context(test_user, activity_role) as any as ApolloContext;
-      const result = await activityLogResolvers.Query.activityLogs(null, {}, context);
+      const result = await auditLogResolvers.Query.auditLogs(null, {}, context);
 
       expect(result).toHaveLength(2);
       expect(result[0].action).toBe('created_deal'); // Most recent first due to sort
@@ -81,24 +81,24 @@ describe('Activity Log Resolver', () => {
     });
 
     it('filters activity logs by user_id if provided', async () => {
-      await ActivityLog.create({
+      await AuditLog.create({
         user_id: test_user._id,
         action: 'viewed_customer',
         metadata: { customer_id: '123' },
       });
-      await ActivityLog.create({
+      await AuditLog.create({
         user_id: test_user_2._id,
         action: 'created_deal',
         metadata: { deal_id: '456' },
       });
-      await ActivityLog.create({
+      await AuditLog.create({
         user_id: test_user._id,
         action: 'updated_lead',
         metadata: { lead_id: '789' },
       });
 
       const context = mock_context(test_user, activity_role) as any as ApolloContext;
-      const result = await activityLogResolvers.Query.activityLogs(null, {
+      const result = await auditLogResolvers.Query.auditLogs(null, {
         user_id: test_user._id.toString(),
       }, context);
 
@@ -109,21 +109,21 @@ describe('Activity Log Resolver', () => {
     });
 
     it('returns empty array when filtering by user with no logs', async () => {
-      await ActivityLog.create({
+      await AuditLog.create({
         user_id: test_user._id,
         action: 'test_action',
         metadata: {},
       });
 
       const context = mock_context(test_user, activity_role) as any as ApolloContext;
-      const result = await activityLogResolvers.Query.activityLogs(null, {
+      const result = await auditLogResolvers.Query.auditLogs(null, {
         user_id: test_user_2._id.toString(),
       }, context);
 
       expect(result).toHaveLength(0);
     });
 
-    it('throws FORBIDDEN without activity_logs.read permission', async () => {
+    it('throws FORBIDDEN without audit_logs.read permission', async () => {
       const no_perm_role = await Role.create({
         name: 'NoActivityRead',
         permissions: { 'customers.read': true },
@@ -139,11 +139,11 @@ describe('Activity Log Resolver', () => {
       const context = mock_context(no_perm_user, no_perm_role) as any as ApolloContext;
 
       await expect(
-        activityLogResolvers.Query.activityLogs(null, {}, context)
+        auditLogResolvers.Query.auditLogs(null, {}, context)
       ).rejects.toThrow();
 
       try {
-        await activityLogResolvers.Query.activityLogs(null, {}, context);
+        await auditLogResolvers.Query.auditLogs(null, {}, context);
       } catch (error) {
         if (error instanceof GraphQLError) {
           expect(error.extensions.code).toBe('FORBIDDEN');
@@ -152,11 +152,11 @@ describe('Activity Log Resolver', () => {
     });
   });
 
-  describe('logActivity mutation', () => {
+  describe('logAudit mutation', () => {
     it('creates activity log and self-attributes user_id to authenticated user', async () => {
       const context = mock_context(test_user, activity_role) as any as ApolloContext;
 
-      const result = await activityLogResolvers.Mutation.logActivity(null, {
+      const result = await auditLogResolvers.Mutation.logAudit(null, {
         input: {
           action: 'viewed_dashboard',
           metadata: { page: 'dashboard' },
@@ -172,7 +172,7 @@ describe('Activity Log Resolver', () => {
     it('self-attributes user_id even if different user_id is in input', async () => {
       const context = mock_context(test_user, activity_role) as any as ApolloContext;
 
-      const result = await activityLogResolvers.Mutation.logActivity(null, {
+      const result = await auditLogResolvers.Mutation.logAudit(null, {
         input: {
           action: 'test_action',
           metadata: {},
@@ -186,7 +186,7 @@ describe('Activity Log Resolver', () => {
     it('logs activity with empty metadata', async () => {
       const context = mock_context(test_user, activity_role) as any as ApolloContext;
 
-      const result = await activityLogResolvers.Mutation.logActivity(null, {
+      const result = await auditLogResolvers.Mutation.logAudit(null, {
         input: {
           action: 'simple_action',
         },
@@ -208,7 +208,7 @@ describe('Activity Log Resolver', () => {
         timestamp: '2026-08-15T10:30:00Z',
       };
 
-      const result = await activityLogResolvers.Mutation.logActivity(null, {
+      const result = await auditLogResolvers.Mutation.logAudit(null, {
         input: {
           action: 'updated_customer',
           metadata: complex_metadata,
@@ -218,10 +218,10 @@ describe('Activity Log Resolver', () => {
       expect(result.metadata).toEqual(complex_metadata);
     });
 
-    it('throws FORBIDDEN without activity_logs.create permission', async () => {
+    it('throws FORBIDDEN without audit_logs.create permission', async () => {
       const no_perm_role = await Role.create({
         name: 'NoActivityCreate',
-        permissions: { 'activity_logs.read': true },
+        permissions: { 'audit_logs.read': true },
       });
       const no_perm_user = await User.create({
         name: 'CreateLimited',
@@ -234,7 +234,7 @@ describe('Activity Log Resolver', () => {
       const context = mock_context(no_perm_user, no_perm_role) as any as ApolloContext;
 
       await expect(
-        activityLogResolvers.Mutation.logActivity(null, {
+        auditLogResolvers.Mutation.logAudit(null, {
           input: {
             action: 'unauthorized_action',
             metadata: {},
@@ -243,7 +243,7 @@ describe('Activity Log Resolver', () => {
       ).rejects.toThrow();
 
       try {
-        await activityLogResolvers.Mutation.logActivity(null, {
+        await auditLogResolvers.Mutation.logAudit(null, {
           input: {
             action: 'unauthorized_action',
             metadata: {},
@@ -258,34 +258,34 @@ describe('Activity Log Resolver', () => {
   });
 
   describe('field resolvers', () => {
-    it('ActivityLog.user resolves user', async () => {
-      const log: any = await ActivityLog.create({
+    it('AuditLog.user resolves user', async () => {
+      const log: any = await AuditLog.create({
         user_id: test_user._id,
         action: 'test_action',
         metadata: {},
       });
 
-      const result = await activityLogResolvers.ActivityLog.user(log);
+      const result = await auditLogResolvers.AuditLog.user(log);
       expect(result).toBeDefined();
       expect(result?.name).toBe('Activity User 1');
       expect(result?.email).toBe('activity1@example.com');
     });
 
-    it('ActivityLog.user resolves correctly for different users', async () => {
-      const log1 = await ActivityLog.create({
+    it('AuditLog.user resolves correctly for different users', async () => {
+      const log1 = await AuditLog.create({
         user_id: test_user._id,
         action: 'action_by_user1',
         metadata: {},
       });
 
-      const log2 = await ActivityLog.create({
+      const log2 = await AuditLog.create({
         user_id: test_user_2._id,
         action: 'action_by_user2',
         metadata: {},
       });
 
-      const result1 = await activityLogResolvers.ActivityLog.user(log1);
-      const result2 = await activityLogResolvers.ActivityLog.user(log2);
+      const result1 = await auditLogResolvers.AuditLog.user(log1);
+      const result2 = await auditLogResolvers.AuditLog.user(log2);
 
       expect(result1?.name).toBe('Activity User 1');
       expect(result2?.name).toBe('Activity User 2');
@@ -294,7 +294,7 @@ describe('Activity Log Resolver', () => {
 
   describe('JSON scalar export', () => {
     it('exports GraphQLJSONObject as JSON scalar', async () => {
-      expect(activityLogResolvers.JSON).toBeDefined();
+      expect(auditLogResolvers.JSON).toBeDefined();
     });
   });
 });

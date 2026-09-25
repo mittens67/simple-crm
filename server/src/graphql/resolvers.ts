@@ -7,7 +7,10 @@ import customerResolvers from "./resolvers/customer";
 import dealResolvers from "./resolvers/deal";
 import supportTicketResolvers from "./resolvers/support-ticket";
 import supportNoteResolvers from "./resolvers/support-note";
-import activityLogResolvers from "./resolvers/activity-log";
+import auditLogResolvers from "./resolvers/audit-log";
+import pipelineResolvers from "./resolvers/pipeline";
+import activityResolvers from "./resolvers/activity";
+import analyticsResolvers from "./resolvers/analytics";
 
 const customScalars = {
   JSON: GraphQLJSON,
@@ -22,5 +25,8 @@ export const resolvers = mergeResolvers([
   dealResolvers,
   supportTicketResolvers,
   supportNoteResolvers,
-  activityLogResolvers,
+  auditLogResolvers,
+  pipelineResolvers,
+  activityResolvers,
+  analyticsResolvers,
 ]);

@@ -376,3 +376,29 @@
     }
   }
 }
+
+// Ticket priority and SLA badges. These live alongside the status badges
+// until Phase 5 replaces the whole table with a DataTable primitive.
+.priority,
+.sla {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.priority-urgent { background: rgba(239, 68, 68, 0.15); color: var(--accent-error); }
+.priority-high   { background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); }
+.priority-medium { background: rgba(59, 130, 246, 0.15); color: var(--accent-info); }
+.priority-low    { background: var(--glass-bg); color: var(--text-secondary); }
+
+.sla-breached { background: rgba(239, 68, 68, 0.15); color: var(--accent-error); }
+.sla-ok       { background: rgba(34, 197, 94, 0.15); color: var(--accent-success); }
+
+.form-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  color: var(--text-tertiary);
+}

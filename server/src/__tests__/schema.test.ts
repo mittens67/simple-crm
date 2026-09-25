@@ -30,7 +30,7 @@ describe('GraphQL schema', () => {
       'deals',
       'supportTickets',
       'supportNotes',
-      'activityLogs',
+      'auditLogs',
     ]) {
       expect(query_fields[field], `Query.${field} is missing from the schema`).toBeDefined();
     }

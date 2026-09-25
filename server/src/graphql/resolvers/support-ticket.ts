@@ -1,7 +1,7 @@
 import { ApolloContext } from '../context';
 import { support_ticket_service } from '../../services/support';
 import { load_by_ref } from '../loaders';
-import { ISupportTicket } from '../../models/support-ticket';
+import { ISupportTicket, is_sla_breached } from '../../models/support-ticket';
 
 export default {
   Query: {
@@ -35,5 +35,7 @@ export default {
 
     assigned_agent: (ticket: ISupportTicket, _: unknown, context: ApolloContext) =>
       load_by_ref(context.loaders.user, ticket.assigned_agent),
+
+    is_sla_breached: (ticket: ISupportTicket) => is_sla_breached(ticket),
   },
 };

@@ -4,7 +4,7 @@ import { customer_service } from '../../services/customer';
 import Customer from '../../models/customer';
 import User from '../../models/user';
 import Role from '../../models/role';
-import ActivityLog from '../../models/activity-log';
+import AuditLog from '../../models/audit-log';
 import type { IUser } from '../../models/user';
 import type { IRole } from '../../models/role';
 import {
@@ -61,7 +61,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await Customer.deleteMany({});
-  await ActivityLog.deleteMany({});
+  await AuditLog.deleteMany({});
 });
 
 const as_rep = () => mock_context(rep, sales_role);
@@ -115,7 +115,7 @@ describe('CustomerService.create', () => {
 
   it('writes an audit entry', async () => {
     await customer_service.create(as_rep(), valid_input());
-    expect(await ActivityLog.countDocuments({ action: 'Customer created' })).toBe(1);
+    expect(await AuditLog.countDocuments({ action: 'Customer created' })).toBe(1);
   });
 });
 

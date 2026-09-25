@@ -1,7 +1,7 @@
 import { gql } from 'graphql-tag';
 
 export default gql`
-  type ActivityLog {
+  type AuditLog {
     id: ID!
     user: User!
     action: String!
@@ -9,17 +9,17 @@ export default gql`
     created_at: String!
   }
 
-  input LogActivityInput {
+  input LogAuditInput {
     action: String!
     metadata: JSON
   }
 
   type Query {
-    activityLogs(user_id: ID): [ActivityLog!]!
+    auditLogs(user_id: ID): [AuditLog!]!
   }
 
   type Mutation {
-    logActivity(input: LogActivityInput!): ActivityLog!
+    logAudit(input: LogAuditInput!): AuditLog!
   }
 
   scalar JSON

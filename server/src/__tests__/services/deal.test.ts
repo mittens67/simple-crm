@@ -2,10 +2,11 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { Types } from 'mongoose';
 import { deal_service } from '../../services/deal';
 import Deal from '../../models/deal';
+import Pipeline, { IPipeline } from '../../models/pipeline';
 import Customer from '../../models/customer';
 import User from '../../models/user';
 import Role from '../../models/role';
-import ActivityLog from '../../models/activity-log';
+import AuditLog from '../../models/audit-log';
 import type { IUser } from '../../models/user';
 import type { IRole } from '../../models/role';
 import type { ICustomer } from '../../models/customer';
@@ -16,6 +17,13 @@ import {
   BadUserInputError,
 } from '../../utils/errors';
 import { mock_context, mock_context_with } from '../helpers/context';
+import {
+  create_test_pipeline,
+  first_open_stage,
+  stage_named,
+  won_stage,
+  lost_stage,
+} from '../helpers/pipeline';
 
 let owner: IUser;
 let other_owner: IUser;
@@ -23,6 +31,7 @@ let manager: IUser;
 let sales_role: IRole;
 let manager_role: IRole;
 let customer: ICustomer;
+let pipeline: IPipeline;
 
 beforeAll(async () => {
   sales_role = await Role.create({
@@ -66,11 +75,13 @@ beforeAll(async () => {
     email: 'dealcustomer@example.com',
     phone: '555-0000',
   });
+
+  pipeline = await create_test_pipeline('Deal Test Pipeline');
 });
 
 beforeEach(async () => {
   await Deal.deleteMany({});
-  await ActivityLog.deleteMany({});
+  await AuditLog.deleteMany({});
 });
 
 const as_owner = () => mock_context(owner, sales_role);
@@ -82,28 +93,65 @@ const valid_input = (overrides: Record<string, unknown> = {}) => ({
   customer_id: String(customer._id),
   owner_id: String(owner._id),
   value: 50000,
-  stage: 'Proposal',
   ...overrides,
 });
 
+/** Builds a deal document directly, bypassing the service. */
+const make_deal = (overrides: Record<string, unknown> = {}) =>
+  Deal.create({
+    title: 'Owned',
+    customer_id: customer._id,
+    owner_id: owner._id,
+    value: 1000,
+    pipeline_id: pipeline._id,
+    stage_id: stage_named(pipeline, 'Proposal')._id,
+    stage_entered_at: new Date(),
+    ...overrides,
+  });
+
 describe('DealService.create', () => {
-  it('creates a deal defaulting to Open', async () => {
+  it('creates a deal defaulting to Open on the first stage', async () => {
     const deal = await deal_service.create(as_owner(), valid_input());
 
     expect(deal.title).toBe('Platform licence');
     expect(deal.value).toBe(50000);
     expect(deal.status).toBe('Open');
+    // No stage given, so it lands on the first stage of the default pipeline.
+    expect(String(deal.stage_id)).toBe(String(first_open_stage(pipeline)._id));
+    expect(String(deal.pipeline_id)).toBe(String(pipeline._id));
+    expect(deal.stage_entered_at).toBeInstanceOf(Date);
+  });
+
+  it('accepts an explicit stage within the pipeline', async () => {
+    const negotiation = stage_named(pipeline, 'Negotiation');
+    const deal = await deal_service.create(
+      as_owner(),
+      valid_input({ pipeline_id: String(pipeline._id), stage_id: String(negotiation._id) })
+    );
+
+    expect(String(deal.stage_id)).toBe(String(negotiation._id));
+  });
+
+  it('rejects a stage that belongs to another pipeline', async () => {
+    const other = await Pipeline.create({
+      name: 'Unrelated Pipeline',
+      stages: [{ name: 'Only', display_order: 0, probability: 10, outcome: 'open' }],
+    });
+
+    await expect(
+      deal_service.create(
+        as_owner(),
+        valid_input({
+          pipeline_id: String(pipeline._id),
+          stage_id: String(other.stages[0]._id),
+        })
+      )
+    ).rejects.toThrow(NotFoundError);
   });
 
   it('rejects a negative value', async () => {
     // Float! alone permitted this; only the zod schema rules it out.
     await expect(deal_service.create(as_owner(), valid_input({ value: -100 }))).rejects.toThrow(
-      ValidationError
-    );
-  });
-
-  it('rejects a missing stage', async () => {
-    await expect(deal_service.create(as_owner(), valid_input({ stage: '' }))).rejects.toThrow(
       ValidationError
     );
   });
@@ -133,22 +181,13 @@ describe('DealService.create', () => {
 
   it('writes an audit entry', async () => {
     await deal_service.create(as_owner(), valid_input());
-    expect(await ActivityLog.countDocuments({ action: 'Deal created' })).toBe(1);
+    expect(await AuditLog.countDocuments({ action: 'Deal created' })).toBe(1);
   });
 });
 
 describe('DealService.update', () => {
-  const owned_deal = () =>
-    Deal.create({
-      title: 'Owned',
-      customer_id: customer._id,
-      owner_id: owner._id,
-      value: 1000,
-      stage: 'Proposal',
-    });
-
   it('updates fields', async () => {
-    const deal = await owned_deal();
+    const deal = await make_deal();
 
     const updated = await deal_service.update(as_owner(), String(deal._id), {
       title: 'Renamed',
@@ -159,36 +198,56 @@ describe('DealService.update', () => {
     expect(updated.value).toBe(2000);
   });
 
-  it('records stage movement in the audit log', async () => {
-    const deal = await owned_deal();
+  it('requires a lost reason when marking a deal lost', async () => {
+    const deal = await make_deal();
 
-    await deal_service.update(as_owner(), String(deal._id), { stage: 'Negotiation' });
+    await expect(
+      deal_service.update(as_owner(), String(deal._id), { status: 'Lost' })
+    ).rejects.toThrow(ValidationError);
+  });
 
-    const log = await ActivityLog.findOne({ action: 'Deal updated' });
-    expect(log?.metadata).toMatchObject({ stage_from: 'Proposal', stage_to: 'Negotiation' });
+  it('accepts a lost deal with a reason and stamps closed_at', async () => {
+    const deal = await make_deal();
+
+    const updated = await deal_service.update(as_owner(), String(deal._id), {
+      status: 'Lost',
+      lost_reason: 'Price',
+    });
+
+    expect(updated.status).toBe('Lost');
+    expect(updated.lost_reason).toBe('Price');
+    expect(updated.closed_at).toBeDefined();
+  });
+
+  it('clears closed_at and the lost reason when a deal is reopened', async () => {
+    const deal = await make_deal();
+    await deal_service.update(as_owner(), String(deal._id), {
+      status: 'Lost',
+      lost_reason: 'Price',
+    });
+
+    const reopened = await deal_service.update(as_owner(), String(deal._id), { status: 'Open' });
+
+    expect(reopened.closed_at).toBeFalsy();
+    expect(reopened.lost_reason).toBeFalsy();
   });
 
   it('ignores unknown fields rather than mass-assigning them', async () => {
-    const deal = await owned_deal();
+    const deal = await make_deal();
 
     // Object.assign(deal, input) used to write whatever arrived.
     const updated = await deal_service.update(as_owner(), String(deal._id), {
       title: 'Renamed',
-      created_at: new Date(0),
+      stage_id: new Types.ObjectId().toString(),
     });
 
     expect(updated.title).toBe('Renamed');
-    expect(updated.created_at.getTime()).not.toBe(0);
+    // Stage changes go through moveDealToStage, never a field edit.
+    expect(String(updated.stage_id)).toBe(String(stage_named(pipeline, 'Proposal')._id));
   });
 
   it("refuses to update another owner's deal", async () => {
-    const deal = await Deal.create({
-      title: 'Theirs',
-      customer_id: customer._id,
-      owner_id: other_owner._id,
-      value: 1,
-      stage: 'Proposal',
-    });
+    const deal = await make_deal({ owner_id: other_owner._id });
 
     await expect(
       deal_service.update(as_owner(), String(deal._id), { title: 'Hijacked' })
@@ -196,22 +255,154 @@ describe('DealService.update', () => {
   });
 });
 
+describe('DealService.move_to_stage', () => {
+  it('stamps stage_entered_at when the stage changes', async () => {
+    const deal = await make_deal({ stage_entered_at: new Date(Date.now() - 10 * 86400000) });
+    const before = deal.stage_entered_at.getTime();
+
+    const moved = await deal_service.move_to_stage(
+      as_owner(),
+      String(deal._id),
+      String(stage_named(pipeline, 'Negotiation')._id)
+    );
+
+    expect(String(moved.stage_id)).toBe(String(stage_named(pipeline, 'Negotiation')._id));
+    expect(moved.stage_entered_at.getTime()).toBeGreaterThan(before);
+  });
+
+  it('records how long the deal sat in the previous stage', async () => {
+    const deal = await make_deal({ stage_entered_at: new Date(Date.now() - 7 * 86400000) });
+
+    await deal_service.move_to_stage(
+      as_owner(),
+      String(deal._id),
+      String(stage_named(pipeline, 'Negotiation')._id)
+    );
+
+    const log = await AuditLog.findOne({ action: 'Deal stage changed' });
+    expect(log?.metadata).toMatchObject({
+      stage_from: 'Proposal',
+      stage_to: 'Negotiation',
+      days_in_previous_stage: 7,
+    });
+  });
+
+  it('closes the deal as Won when moved to the won stage', async () => {
+    const deal = await make_deal();
+
+    const moved = await deal_service.move_to_stage(
+      as_owner(),
+      String(deal._id),
+      String(won_stage(pipeline)._id)
+    );
+
+    expect(moved.status).toBe('Won');
+    expect(moved.closed_at).toBeDefined();
+  });
+
+  it('closes the deal as Lost when moved to the lost stage', async () => {
+    const deal = await make_deal();
+
+    const moved = await deal_service.move_to_stage(
+      as_owner(),
+      String(deal._id),
+      String(lost_stage(pipeline)._id)
+    );
+
+    expect(moved.status).toBe('Lost');
+    expect(moved.closed_at).toBeDefined();
+    // A reason is always present so win/loss analysis has something to group by.
+    expect(moved.lost_reason).toBeTruthy();
+  });
+
+  it('reopens a closed deal moved back to an open stage', async () => {
+    const deal = await make_deal();
+    await deal_service.move_to_stage(as_owner(), String(deal._id), String(won_stage(pipeline)._id));
+
+    const reopened = await deal_service.move_to_stage(
+      as_owner(),
+      String(deal._id),
+      String(stage_named(pipeline, 'Proposal')._id)
+    );
+
+    expect(reopened.status).toBe('Open');
+    expect(reopened.closed_at).toBeFalsy();
+  });
+
+  it('is a no-op when the deal is already on that stage', async () => {
+    const deal = await make_deal();
+    const before = deal.stage_entered_at.getTime();
+
+    const moved = await deal_service.move_to_stage(
+      as_owner(),
+      String(deal._id),
+      String(stage_named(pipeline, 'Proposal')._id)
+    );
+
+    expect(moved.stage_entered_at.getTime()).toBe(before);
+    expect(await AuditLog.countDocuments({ action: 'Deal stage changed' })).toBe(0);
+  });
+
+  it("refuses to move another owner's deal", async () => {
+    const deal = await make_deal({ owner_id: other_owner._id });
+
+    await expect(
+      deal_service.move_to_stage(
+        as_owner(),
+        String(deal._id),
+        String(stage_named(pipeline, 'Negotiation')._id)
+      )
+    ).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe('DealService.board', () => {
+  it('groups open deals into ordered stage columns', async () => {
+    await make_deal({ title: 'A', stage_id: stage_named(pipeline, 'Proposal')._id });
+    await make_deal({ title: 'B', stage_id: stage_named(pipeline, 'Proposal')._id, value: 500 });
+    await make_deal({ title: 'C', stage_id: stage_named(pipeline, 'Negotiation')._id });
+
+    const board = await deal_service.board(as_owner(), String(pipeline._id));
+
+    expect(board.map((c) => c.stage.name)).toEqual([
+      'Prospecting',
+      'Qualification',
+      'Proposal',
+      'Negotiation',
+      'Closed Won',
+      'Closed Lost',
+    ]);
+
+    const proposal = board.find((c) => c.stage.name === 'Proposal')!;
+    expect(proposal.deal_count).toBe(2);
+    expect(proposal.total_value).toBe(1500);
+  });
+
+  it('excludes closed deals from the board', async () => {
+    await make_deal({ status: 'Won', stage_id: won_stage(pipeline)._id });
+
+    const board = await deal_service.board(as_owner(), String(pipeline._id));
+    const won_column = board.find((c) => c.stage.outcome === 'won')!;
+
+    expect(won_column.deal_count).toBe(0);
+  });
+
+  it('scopes the board to the calling owner', async () => {
+    await make_deal({ title: 'Mine' });
+    await make_deal({ title: 'Theirs', owner_id: other_owner._id });
+
+    const mine = await deal_service.board(as_owner(), String(pipeline._id));
+    const all = await deal_service.board(as_manager(), String(pipeline._id));
+
+    expect(mine.reduce((sum, c) => sum + c.deal_count, 0)).toBe(1);
+    expect(all.reduce((sum, c) => sum + c.deal_count, 0)).toBe(2);
+  });
+});
+
 describe('DealService.list', () => {
   beforeEach(async () => {
-    await Deal.create({
-      title: 'Mine',
-      customer_id: customer._id,
-      owner_id: owner._id,
-      value: 1,
-      stage: 'Proposal',
-    });
-    await Deal.create({
-      title: 'Theirs',
-      customer_id: customer._id,
-      owner_id: other_owner._id,
-      value: 2,
-      stage: 'Closing',
-    });
+    await make_deal({ title: 'Mine' });
+    await make_deal({ title: 'Theirs', owner_id: other_owner._id, value: 2 });
   });
 
   it('scopes the list to the calling owner', async () => {
@@ -244,26 +435,14 @@ describe('DealService.list', () => {
 
 describe('DealService.remove', () => {
   it('deletes a deal the caller owns', async () => {
-    const deal = await Deal.create({
-      title: 'Doomed',
-      customer_id: customer._id,
-      owner_id: owner._id,
-      value: 1,
-      stage: 'Proposal',
-    });
+    const deal = await make_deal({ title: 'Doomed' });
 
     expect(await deal_service.remove(as_owner(), String(deal._id))).toBe(true);
     expect(await Deal.countDocuments()).toBe(0);
   });
 
   it("refuses to delete another owner's deal", async () => {
-    const deal = await Deal.create({
-      title: 'Theirs',
-      customer_id: customer._id,
-      owner_id: other_owner._id,
-      value: 1,
-      stage: 'Proposal',
-    });
+    const deal = await make_deal({ owner_id: other_owner._id });
 
     await expect(deal_service.remove(as_owner(), String(deal._id))).rejects.toThrow(NotFoundError);
     expect(await Deal.countDocuments()).toBe(1);

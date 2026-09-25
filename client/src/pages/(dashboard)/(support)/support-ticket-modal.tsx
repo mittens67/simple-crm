@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
 import { TICKET_STATUSES, TICKET_STATUS_LABELS } from '../../../types/common';
+import {
+  TICKET_PRIORITIES,
+  TICKET_CATEGORIES,
+  TICKET_CATEGORY_LABELS,
+} from '../../../types/support-ticket';
 
 interface Customer {
   id: string;
@@ -26,6 +31,8 @@ const empty_form = {
   issue_summary: '',
   status: 'Open',
   internal_notes: '',
+  priority: 'Medium',
+  category: 'Other',
 };
 
 const SupportTicketModal = ({
@@ -48,6 +55,8 @@ const SupportTicketModal = ({
       issue_summary: ticket.issue_summary,
       status: ticket.status,
       internal_notes: ticket.internal_notes || '',
+      priority: ticket.priority,
+      category: ticket.category,
     });
   }, [ticket]);
 
@@ -66,6 +75,8 @@ const SupportTicketModal = ({
       issue_summary: form_data.issue_summary,
       status: form_data.status as SupportTicket['status'],
       internal_notes: form_data.internal_notes || undefined,
+      priority: form_data.priority as SupportTicket['priority'],
+      category: form_data.category as SupportTicket['category'],
     });
   };
 
@@ -120,6 +131,33 @@ const SupportTicketModal = ({
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Priority</label>
+            <select name="priority" value={form_data.priority} onChange={handle_change}>
+              {TICKET_PRIORITIES.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
+            {!ticket && (
+              <small className="form-hint">
+                Sets the response deadline: Urgent 1h, High 4h, Medium 24h, Low 72h.
+              </small>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label>Category</label>
+            <select name="category" value={form_data.category} onChange={handle_change}>
+              {TICKET_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {TICKET_CATEGORY_LABELS[category]}
                 </option>
               ))}
             </select>

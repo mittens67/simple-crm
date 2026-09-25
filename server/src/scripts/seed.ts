@@ -36,7 +36,7 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
       'deals.create': true,
       'deals.update': true,
       'deals.delete': true,
-      'activity_logs.create': true,
+      'audit_logs.create': true,
     },
   },
   // A manager sees and edits the whole team's pipeline via the `.all` scopes.
@@ -47,8 +47,8 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
       'leads.*': true,
       'customers.*': true,
       'deals.*': true,
-      'activity_logs.read': true,
-      'activity_logs.create': true,
+      'audit_logs.read': true,
+      'audit_logs.create': true,
     },
   },
   {
@@ -65,7 +65,7 @@ const DEFAULT_ROLES: { name: string; permissions: Record<string, boolean> }[] = 
       'support_notes.delete': true,
       'customers.read': true,
       'customers.read.all': true,
-      'activity_logs.create': true,
+      'audit_logs.create': true,
     },
   },
 ];
@@ -179,7 +179,7 @@ const seed = async () => {
     const counts = await create_demo_data({ sales_rep_ids, support_agent_ids });
     console.log(
       `Created ${counts.customers} customers, ${counts.leads} leads, ${counts.deals} deals, ` +
-        `${counts.tickets} tickets, ${counts.notes} notes, ${counts.logs} activity logs`
+        `${counts.tickets} tickets, ${counts.activities} activities, ${counts.notes} notes, ${counts.logs} audit entries`
     );
   }
 

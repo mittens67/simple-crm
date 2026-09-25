@@ -6,7 +6,7 @@ import SupportNote from '../../models/support-note';
 import Customer from '../../models/customer';
 import User from '../../models/user';
 import Role from '../../models/role';
-import ActivityLog from '../../models/activity-log';
+import AuditLog from '../../models/audit-log';
 import type { IUser } from '../../models/user';
 import type { IRole } from '../../models/role';
 import type { ICustomer } from '../../models/customer';
@@ -76,7 +76,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await SupportTicket.deleteMany({});
   await SupportNote.deleteMany({});
-  await ActivityLog.deleteMany({});
+  await AuditLog.deleteMany({});
 });
 
 const as_agent = () => mock_context(agent, support_role);
@@ -152,7 +152,7 @@ describe('SupportTicketService', () => {
 
     await support_ticket_service.update(as_agent(), String(ticket._id), { status: 'Resolved' });
 
-    const log = await ActivityLog.findOne({ action: 'Support ticket updated' });
+    const log = await AuditLog.findOne({ action: 'Support ticket updated' });
     expect(log?.metadata).toMatchObject({ status_from: 'Open', status_to: 'Resolved' });
   });
 

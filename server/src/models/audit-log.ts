@@ -1,14 +1,14 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 import { APPEND_ONLY_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
-export interface IActivityLog extends Document {
+export interface IAuditLog extends Document {
   user_id: Types.ObjectId;       // Ref to User
   action: string;                // Description of the action
   metadata?: Record<string, any>; // Optional metadata
   created_at: Date;
 }
 
-const ActivityLogSchema = new Schema<IActivityLog>(
+const AuditLogSchema = new Schema<IAuditLog>(
   {
     user_id: {
       type: Schema.Types.ObjectId,
@@ -27,8 +27,8 @@ const ActivityLogSchema = new Schema<IActivityLog>(
   APPEND_ONLY_SCHEMA_OPTIONS
 );
 
-add_indexes(ActivityLogSchema, {
+add_indexes(AuditLogSchema, {
   owner_fields: ['user_id'],
 });
 
-export default mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);
+export default mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);

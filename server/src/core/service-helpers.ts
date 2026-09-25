@@ -1,6 +1,6 @@
 import { Model, Types } from 'mongoose';
 import { ZodType } from 'zod';
-import ActivityLog from '../models/activity-log';
+import AuditLog from '../models/audit-log';
 import { IUser } from '../models/user';
 import { BadUserInputError, NotFoundError, ValidationError } from '../utils/errors';
 
@@ -88,7 +88,7 @@ export const audit = async (
   metadata: Record<string, unknown> = {}
 ): Promise<void> => {
   try {
-    await ActivityLog.create({ user_id: actor._id, action, metadata });
+    await AuditLog.create({ user_id: actor._id, action, metadata });
   } catch (error) {
     console.error('Failed to write audit log:', action, error);
   }

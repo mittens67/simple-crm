@@ -10,7 +10,7 @@ export const RESOURCES = [
   'deals',
   'support_tickets',
   'support_notes',
-  'activity_logs',
+  'audit_logs',
 ] as const;
 
 export const ACTIONS = ['read', 'create', 'update', 'delete'] as const;

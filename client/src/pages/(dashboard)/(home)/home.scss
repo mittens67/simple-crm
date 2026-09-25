@@ -196,3 +196,120 @@
     }
   }
 }
+
+// --- Phase 2 reporting widgets ---------------------------------------------
+// Lightweight CSS bars rather than a charting library; Phase 6 replaces these
+// with recharts once the design system exists.
+
+.home {
+  .stat-hint {
+    margin: 0.4rem 0 0;
+    font-size: 1.1rem;
+    color: var(--text-tertiary);
+  }
+
+  .empty-note {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  .funnel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .funnel-row {
+    display: grid;
+    grid-template-columns: 14rem 1fr auto;
+    align-items: center;
+    gap: 1.2rem;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+  }
+
+  .funnel-label {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+
+    small {
+      margin-left: 0.6rem;
+      color: var(--text-tertiary);
+    }
+  }
+
+  .funnel-bar-track {
+    background: var(--glass-bg);
+    border-radius: 999px;
+    height: 1rem;
+    overflow: hidden;
+  }
+
+  .funnel-bar {
+    height: 100%;
+    background: var(--accent-info);
+    border-radius: 999px;
+    transition: width var(--transition-speed) ease;
+  }
+
+  .funnel-bar-alt {
+    background: var(--accent-success);
+  }
+
+  .funnel-value {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+    height: 16rem;
+  }
+
+  .spark-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 0.6rem;
+  }
+
+  .spark-bar {
+    width: 100%;
+    background: var(--accent-info);
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+  }
+
+  .spark-label {
+    font-size: 1rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.3rem;
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border-color-light);
+    }
+
+    th {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+  }
+}

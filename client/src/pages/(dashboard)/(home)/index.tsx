@@ -1,187 +1,238 @@
 import { useQuery } from '@apollo/client';
-import {
-  LEADS_QUERY,
-  CUSTOMERS_QUERY,
-  DEALS_QUERY,
-  SUPPORT_TICKETS_QUERY,
-} from '../../../lib/graphql-queries';
+import { DASHBOARD_QUERY } from '../../../lib/graphql-queries';
+import LoadingSpinner from '../../../components/ui/loading-spinner';
 import './home.scss';
 
-interface Card {
-  label: string;
+/**
+ * Every figure here comes from a server-side aggregation.
+ *
+ * This page used to fetch four full lists and reduce them in the render body,
+ * so each number described whatever page happened to load — "Total Leads" was
+ * capped at the page size — and it downloaded every record to compute eight
+ * integers.
+ */
+
+interface DashboardSummary {
+  total_leads: number;
+  total_customers: number;
+  open_deals: number;
+  open_deal_value: number;
+  weighted_pipeline_value: number;
+  won_value_this_month: number;
+  open_tickets: number;
+  overdue_tasks: number;
+}
+
+interface FunnelEntry {
+  stage_id: string;
+  stage_name: string;
+  deal_count: number;
+  total_value: number;
+  weighted_value: number;
+  avg_days_in_stage: number;
+  probability: number;
+}
+
+interface RevenuePoint {
+  period: string;
+  count: number;
   value: number;
-  icon: string;
-  color: string;
-  subtitle?: string;
 }
 
-interface RecentItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  type: string;
-  timestamp: string;
-}
-
-interface Deal {
-  value: number;
+interface LeadFunnelEntry {
   status: string;
+  count: number;
 }
 
-interface Ticket {
-  status: string;
-}
-
-interface Lead {
-  id: string;
+interface RepRow {
+  user_id: string;
   name: string;
-  email: string;
-  created_at: string;
-  status: string;
+  open_deals: number;
+  won_deals: number;
+  lost_deals: number;
+  won_value: number;
+  win_rate: number | null;
 }
 
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
+interface SlaSummary {
+  total: number;
+  breached: number;
+  compliance_rate: number;
+  avg_first_response_hours: number | null;
 }
+
+const money = (value: number) =>
+  value >= 1000 ? `$${Math.round(value / 1000).toLocaleString()}k` : `$${Math.round(value)}`;
+
+const month_label = (period: string) =>
+  new Date(period).toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
 
 const Home = () => {
-  const { data: leads_data } = useQuery(LEADS_QUERY);
-  const { data: customers_data } = useQuery(CUSTOMERS_QUERY);
-  const { data: deals_data } = useQuery(DEALS_QUERY);
-  const { data: tickets_data } = useQuery(SUPPORT_TICKETS_QUERY);
+  const { data, loading, error } = useQuery(DASHBOARD_QUERY, { variables: { months: 12 } });
 
-  // Every list is paginated now, so `items` is one page and `total` is the
-  // real count. Counts must come from `total`; the old code called .length on
-  // whatever page happened to load, which capped "Total Leads" at 20.
-  const leads = (leads_data?.leads?.items || []) as Lead[];
-  const customers = (customers_data?.customers?.items || []) as Customer[];
-  const deals = (deals_data?.deals?.items || []) as Deal[];
-  const tickets = (tickets_data?.supportTickets?.items || []) as Ticket[];
+  if (loading && !data) return <LoadingSpinner />;
+  if (error) {
+    return (
+      <div className="home">
+        <div className="home-header">
+          <h1>Dashboard</h1>
+          <p className="home-subtitle">Could not load reporting data: {error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
-  const lead_total = leads_data?.leads?.total ?? 0;
-  const customer_total = customers_data?.customers?.total ?? 0;
-  const deal_total = deals_data?.deals?.total ?? 0;
-  const ticket_total = tickets_data?.supportTickets?.total ?? 0;
+  const summary = (data?.dashboardSummary ?? {}) as DashboardSummary;
+  const funnel = (data?.pipelineFunnel ?? []) as FunnelEntry[];
+  const revenue = (data?.revenueOverTime ?? []) as RevenuePoint[];
+  const lead_funnel = (data?.leadFunnel ?? []) as LeadFunnelEntry[];
+  const reps = (data?.repPerformance ?? []) as RepRow[];
+  const sla = (data?.slaSummary ?? {}) as SlaSummary;
 
-  // These are still derived in the browser from the first page of each list,
-  // so they describe recent records rather than the whole dataset. Phase 2
-  // replaces them with server-side $group aggregations; until then the labels
-  // below say "recent" rather than overstating what the number means.
-  const total_deal_value = deals.reduce((sum: number, deal) => sum + (deal.value ?? 0), 0);
-  const open_tickets = tickets.filter((t) => t.status === 'Open').length;
-  const won_deals = deals.filter((d) => d.status === 'Won').length;
-  // 'Pending' means a rep has been assigned and is working the lead.
-  const pending_leads = leads.filter((l) => l.status === 'Pending').length;
-
-  const stats: Card[] = [
+  const stats = [
+    { label: 'Open Pipeline', value: money(summary.open_deal_value ?? 0), icon: '📈', hint: `${summary.open_deals ?? 0} open deals` },
+    { label: 'Weighted Pipeline', value: money(summary.weighted_pipeline_value ?? 0), icon: '⚖️', hint: 'Scaled by stage probability' },
+    { label: 'Won This Month', value: money(summary.won_value_this_month ?? 0), icon: '🏆', hint: 'Closed-won value' },
+    { label: 'Total Leads', value: String(summary.total_leads ?? 0), icon: '👥', hint: 'Excluding archived' },
+    { label: 'Customers', value: String(summary.total_customers ?? 0), icon: '🏢', hint: 'Active accounts' },
+    { label: 'Open Tickets', value: String(summary.open_tickets ?? 0), icon: '🎫', hint: 'Open or in progress' },
+    { label: 'Overdue Tasks', value: String(summary.overdue_tasks ?? 0), icon: '⏰', hint: 'Assigned to you' },
     {
-      label: 'Total Leads',
-      value: lead_total,
-      icon: '👥',
-      color: '#3b82f6',
-    },
-    {
-      label: 'Customers',
-      value: customer_total,
-      icon: '🏢',
-      color: '#2563eb',
-    },
-    {
-      label: 'Recent Deal Value',
-      value: Math.round(total_deal_value / 1000),
-      icon: '💰',
-      color: '#1d4ed8',
-      subtitle: 'K',
-    },
-    {
-      label: 'Open Tickets (recent)',
-      value: open_tickets,
-      icon: '🎫',
-      color: '#60a5fa',
+      label: 'SLA Compliance',
+      value: `${Math.round(sla.compliance_rate ?? 100)}%`,
+      icon: '⏱️',
+      hint: sla.avg_first_response_hours
+        ? `Avg first response ${sla.avg_first_response_hours.toFixed(1)}h`
+        : 'No responses yet',
     },
   ];
 
-  const recent_items: RecentItem[] = [
-    ...leads.slice(0, 2).map((lead) => ({
-      id: lead.id,
-      title: lead.name,
-      subtitle: lead.email,
-      type: 'lead',
-      timestamp: lead.created_at,
-    })),
-    ...customers.slice(0, 2).map((customer) => ({
-      id: customer.id,
-      title: customer.name,
-      subtitle: customer.email,
-      type: 'customer',
-      timestamp: customer.created_at,
-    })),
-  ];
+  const max_revenue = Math.max(1, ...revenue.map((p) => p.value));
+  const max_funnel = Math.max(1, ...funnel.map((f) => f.deal_count));
+  const max_lead = Math.max(1, ...lead_funnel.map((f) => f.count));
 
   return (
     <div className="home">
       <div className="home-header">
         <h1>Dashboard</h1>
-        <p className="home-subtitle">Welcome back! Here's what's happening with your CRM.</p>
+        <p className="home-subtitle">
+          Figures cover everything you can see — a rep's own records, a manager's whole team.
+        </p>
       </div>
 
       <div className="home-stats">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="stat-card" style={{ borderLeftColor: stat.color }}>
+        {stats.map((stat) => (
+          <div key={stat.label} className="stat-card">
             <div className="stat-icon">{stat.icon}</div>
             <div className="stat-content">
               <p className="stat-label">{stat.label}</p>
-              <p className="stat-value">
-                {stat.value}
-                {stat.subtitle && <span className="stat-subtitle">{stat.subtitle}</span>}
-              </p>
+              <p className="stat-value">{stat.value}</p>
+              <p className="stat-hint">{stat.hint}</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="home-content">
-        <div className="home-section">
-          <h2>Quick Stats</h2>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <span className="stat-label">Leads In Progress (recent)</span>
-              <span className="stat-number">{pending_leads}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Won Deals (recent)</span>
-              <span className="stat-number">{won_deals}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Total Deals</span>
-              <span className="stat-number">{deal_total}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Total Tickets</span>
-              <span className="stat-number">{ticket_total}</span>
-            </div>
-          </div>
-        </div>
-
-        {recent_items.length > 0 && (
-          <div className="home-section">
-            <h2>Recent Activity</h2>
-            <div className="recent-list">
-              {recent_items.map((item) => (
-                <div key={item.id} className={`recent-item recent-${item.type}`}>
-                  <div className="recent-badge">{item.type === 'lead' ? '📝' : '🏢'}</div>
-                  <div className="recent-content">
-                    <p className="recent-title">{item.title}</p>
-                    <p className="recent-subtitle">{item.subtitle}</p>
+        <section className="home-section">
+          <h2>Pipeline by stage</h2>
+          {funnel.length === 0 ? (
+            <p className="empty-note">No pipeline configured yet.</p>
+          ) : (
+            <div className="funnel">
+              {funnel.map((entry) => (
+                <div key={entry.stage_id} className="funnel-row">
+                  <span className="funnel-label">
+                    {entry.stage_name}
+                    <small>{entry.probability}%</small>
+                  </span>
+                  <div className="funnel-bar-track">
+                    <div
+                      className="funnel-bar"
+                      style={{ width: `${(entry.deal_count / max_funnel) * 100}%` }}
+                    />
                   </div>
+                  <span className="funnel-value">
+                    {entry.deal_count} · {money(entry.total_value)}
+                    {entry.avg_days_in_stage > 0 && (
+                      <small> · {Math.round(entry.avg_days_in_stage)}d avg</small>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
+          )}
+        </section>
+
+        <section className="home-section">
+          <h2>Revenue (last 12 months)</h2>
+          {revenue.length === 0 ? (
+            <p className="empty-note">No closed-won deals in this period.</p>
+          ) : (
+            <div className="spark">
+              {revenue.map((point) => (
+                <div key={point.period} className="spark-col" title={`${money(point.value)} from ${point.count} deals`}>
+                  <div
+                    className="spark-bar"
+                    style={{ height: `${Math.max(4, (point.value / max_revenue) * 100)}%` }}
+                  />
+                  <span className="spark-label">{month_label(point.period)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="home-section">
+          <h2>Leads by status</h2>
+          <div className="funnel">
+            {lead_funnel.map((entry) => (
+              <div key={entry.status} className="funnel-row">
+                <span className="funnel-label">{entry.status}</span>
+                <div className="funnel-bar-track">
+                  <div
+                    className="funnel-bar funnel-bar-alt"
+                    style={{ width: `${(entry.count / max_lead) * 100}%` }}
+                  />
+                </div>
+                <span className="funnel-value">{entry.count}</span>
+              </div>
+            ))}
           </div>
-        )}
+        </section>
+
+        <section className="home-section">
+          <h2>Rep performance</h2>
+          {reps.length === 0 ? (
+            <p className="empty-note">No deals yet.</p>
+          ) : (
+            <table className="mini-table">
+              <thead>
+                <tr>
+                  <th>Rep</th>
+                  <th>Open</th>
+                  <th>Won</th>
+                  <th>Lost</th>
+                  <th>Won value</th>
+                  <th>Win rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reps.map((rep) => (
+                  <tr key={rep.user_id}>
+                    <td>{rep.name}</td>
+                    <td>{rep.open_deals}</td>
+                    <td>{rep.won_deals}</td>
+                    <td>{rep.lost_deals}</td>
+                    <td>{money(rep.won_value)}</td>
+                    {/* Null, not 0%: a rep with nothing closed has no win rate. */}
+                    <td>{rep.win_rate === null ? '—' : `${Math.round(rep.win_rate)}%`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
       </div>
     </div>
   );

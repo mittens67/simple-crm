@@ -5,7 +5,7 @@ import Lead from '../../models/lead';
 import Customer from '../../models/customer';
 import User from '../../models/user';
 import Role from '../../models/role';
-import ActivityLog from '../../models/activity-log';
+import AuditLog from '../../models/audit-log';
 import type { IUser } from '../../models/user';
 import type { IRole } from '../../models/role';
 import { ValidationError, NotFoundError, ForbiddenError, BadUserInputError } from '../../utils/errors';
@@ -70,7 +70,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await Lead.deleteMany({});
   await Customer.deleteMany({});
-  await ActivityLog.deleteMany({});
+  await AuditLog.deleteMany({});
 });
 
 const as_rep = () => mock_context(rep, sales_role);
@@ -125,7 +125,7 @@ describe('LeadService.create', () => {
   it('writes an audit entry', async () => {
     await lead_service.create(as_rep(), valid_input());
 
-    const logs = await ActivityLog.find({ action: 'Lead created' });
+    const logs = await AuditLog.find({ action: 'Lead created' });
     expect(logs).toHaveLength(1);
     expect(String(logs[0].user_id)).toBe(String(rep._id));
   });
@@ -202,7 +202,7 @@ describe('LeadService conversion', () => {
 
     await lead_service.update(as_rep(), String(lead._id), { status: 'Converted' });
 
-    expect(await ActivityLog.countDocuments({ action: 'Lead converted' })).toBe(1);
+    expect(await AuditLog.countDocuments({ action: 'Lead converted' })).toBe(1);
   });
 });
 
