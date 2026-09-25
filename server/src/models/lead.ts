@@ -10,6 +10,18 @@ export interface ILead extends Document {
   customer_id?: Types.ObjectId; // Ref to Customer when converted
   sales_notes?: string;
   archive_notes?: string;
+  /**
+   * Cached AI assessment. Scoring is an explicit action or a reaction to a
+   * change — never something a read triggers, which would burn the model
+   * quota on every list query.
+   */
+  ai_score?: number;
+  ai_rationale?: string;
+  ai_next_action?: string;
+  ai_confidence?: number;
+  ai_scored_at?: Date;
+  /** Which backend produced the score, so mock and live data are tellable apart. */
+  ai_provider?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -34,6 +46,12 @@ const LeadSchema = new Schema<ILead>(
     },
     sales_notes: String,
     archive_notes: String,
+    ai_score: { type: Number, min: 0, max: 100 },
+    ai_rationale: { type: String },
+    ai_next_action: { type: String },
+    ai_confidence: { type: Number, min: 0, max: 1 },
+    ai_scored_at: { type: Date },
+    ai_provider: { type: String },
   },
   BASE_SCHEMA_OPTIONS
 );
@@ -43,5 +61,8 @@ add_indexes(LeadSchema, {
   // Leads are searched by name/email/phone and filtered by status.
   searchable: ['email', 'name', 'status'],
 });
+
+// "Show me my hottest leads" sorts by score within an owner's book.
+LeadSchema.index({ assigned_rep_id: 1, ai_score: -1 });
 
 export default mongoose.model<ILead>('Lead', LeadSchema);

@@ -10,6 +10,7 @@ import auditLog from './schemas/audit-log';
 import pipeline from './schemas/pipeline';
 import activity from './schemas/activity';
 import analytics from './schemas/analytics';
+import ai from './schemas/ai';
 
 export const typeDefs = mergeTypeDefs([
   user,
@@ -23,4 +24,5 @@ export const typeDefs = mergeTypeDefs([
   pipeline,
   activity,
   analytics,
+  ai,
 ]);

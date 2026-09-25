@@ -33,6 +33,12 @@ export const LEAD_FIELDS = gql`
     }
     sales_notes
     archive_notes
+    ai_score
+    ai_rationale
+    ai_next_action
+    ai_confidence
+    ai_scored_at
+    ai_provider
     created_at
     updated_at
   }
@@ -488,5 +494,89 @@ export const DASHBOARD_QUERY = gql`
       compliance_rate
       avg_first_response_hours
     }
+  }
+`;
+
+// --- AI --------------------------------------------------------------------
+
+export const AI_STATUS_QUERY = gql`
+  query GetAiStatus {
+    aiStatus {
+      provider
+      is_live
+      model
+    }
+  }
+`;
+
+export const AI_SEARCH_QUERY = gql`
+  query AiSearch($question: String!, $limit: Int) {
+    aiSearch(question: $question, limit: $limit) {
+      plan {
+        entity
+        explanation
+        filters
+      }
+      total
+      has_more
+      leads {
+        id
+        name
+        email
+        status
+      }
+      customers {
+        id
+        name
+        email
+      }
+      deals {
+        id
+        title
+        value
+        status
+        stage {
+          id
+          name
+        }
+      }
+      supportTickets {
+        id
+        issue_summary
+        status
+        priority
+        is_sla_breached
+      }
+    }
+  }
+`;
+
+export const AI_SUMMARY_QUERY = gql`
+  query AiSummary($target_type: AiTargetType!, $target_id: ID!) {
+    aiSummary(target_type: $target_type, target_id: $target_id)
+  }
+`;
+
+export const SCORE_LEAD_MUTATION = gql`
+  mutation ScoreLead($id: ID!, $refresh: Boolean) {
+    scoreLead(id: $id, refresh: $refresh) {
+      ...LeadFields
+    }
+  }
+  ${LEAD_FIELDS}
+`;
+
+export const SCORE_LEADS_BULK_MUTATION = gql`
+  mutation ScoreLeadsBulk($limit: Int) {
+    scoreLeadsBulk(limit: $limit) {
+      ...LeadFields
+    }
+  }
+  ${LEAD_FIELDS}
+`;
+
+export const DRAFT_EMAIL_MUTATION = gql`
+  mutation DraftEmail($target_type: AiTargetType!, $target_id: ID!, $instruction: String) {
+    draftEmail(target_type: $target_type, target_id: $target_id, instruction: $instruction)
   }
 `;

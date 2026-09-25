@@ -19,6 +19,14 @@ export interface Lead {
   };
   sales_notes?: string;
   archive_notes?: string;
+  /** Cached AI assessment; null until the lead has been scored. */
+  ai_score?: number | null;
+  ai_rationale?: string | null;
+  ai_next_action?: string | null;
+  ai_confidence?: number | null;
+  ai_scored_at?: string | null;
+  /** 'mock' when the deterministic stand-in produced it, so the UI can say so. */
+  ai_provider?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,9 +41,3 @@ export interface LeadInput {
   archive_notes?: string;
 }
 
-export interface LeadsResponse {
-  leads: {
-    data: Lead[];
-    total: number;
-  };
-}

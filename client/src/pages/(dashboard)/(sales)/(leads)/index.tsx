@@ -7,6 +7,8 @@ import LoadingSpinner from '../../../../components/ui/loading-spinner';
 import Pagination from '../../../../components/ui/pagination';
 import LeadModal from './lead-modal';
 import LeadView from './lead-view';
+import { useLeadScoring } from '../../../../hooks/use-lead-scoring';
+import { LeadScoreBadge, LeadInsight } from '../../../../components/ai/lead-score';
 import './leads.scss';
 
 const Leads = () => {
@@ -16,6 +18,14 @@ const Leads = () => {
   const [viewing, set_viewing] = useState<Lead | null>(null);
 
   const page = useResourcePage<Lead, LeadInput>({ crud: leads, noun: 'lead' });
+  const scoring = useLeadScoring();
+  const [insight_for, set_insight_for] = useState<Lead | null>(null);
+
+  const show_insight = async (lead: Lead) => {
+    // Already scored: show what we have. Unscored: score it, then show.
+    const scored = lead.ai_score == null ? await scoring.score_lead(lead.id) : lead;
+    set_insight_for((scored as Lead) ?? lead);
+  };
 
   const is_terminal = (lead: Lead) => lead.status === 'Archived' || lead.status === 'Converted';
 
@@ -25,11 +35,23 @@ const Leads = () => {
     <div className="leads">
       <div className="leads-header">
         <h1>Leads</h1>
-        {can('leads.create') && (
-          <button className="btn-primary" onClick={page.open_create}>
-            + New Lead
-          </button>
-        )}
+        <div className="leads-actions">
+          {can('leads.update') && (
+            <button
+              className="btn-secondary"
+              onClick={() => scoring.score_batch(5)}
+              disabled={scoring.bulk_loading}
+              title="Score the next few unscored leads"
+            >
+              {scoring.bulk_loading ? 'Scoring…' : '✨ Score leads'}
+            </button>
+          )}
+          {can('leads.create') && (
+            <button className="btn-primary" onClick={page.open_create}>
+              + New Lead
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="leads-search">
@@ -41,12 +63,23 @@ const Leads = () => {
         />
       </div>
 
+      {scoring.error && (
+        <p className="leads-error" role="alert">
+          {scoring.error}
+        </p>
+      )}
+
+      {insight_for && (
+        <LeadInsight lead={insight_for} is_live={scoring.is_live} />
+      )}
+
       <table className="leads-table">
         <thead>
           <tr>
             <th>Name</th>
             <th>Email</th>
             <th>Phone</th>
+            <th>Score</th>
             <th>Status</th>
             <th>Assigned Rep</th>
             <th>Converted To</th>
@@ -56,7 +89,7 @@ const Leads = () => {
         <tbody>
           {leads.items.length === 0 && (
             <tr>
-              <td colSpan={7} className="table-empty">
+              <td colSpan={8} className="table-empty">
                 {page.search_input ? 'No leads match that search.' : 'No leads yet.'}
               </td>
             </tr>
@@ -66,6 +99,13 @@ const Leads = () => {
               <td>{lead.name}</td>
               <td>{lead.email}</td>
               <td>{lead.phone}</td>
+              <td>
+                <LeadScoreBadge
+                  lead={lead}
+                  scoring={scoring.is_scoring(lead.id)}
+                  on_score={can('leads.update') ? () => show_insight(lead) : undefined}
+                />
+              </td>
               <td>
                 <span className={`status status-${lead.status.toLowerCase()}`}>{lead.status}</span>
               </td>

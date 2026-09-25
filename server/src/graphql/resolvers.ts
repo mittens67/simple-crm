@@ -11,6 +11,7 @@ import auditLogResolvers from "./resolvers/audit-log";
 import pipelineResolvers from "./resolvers/pipeline";
 import activityResolvers from "./resolvers/activity";
 import analyticsResolvers from "./resolvers/analytics";
+import aiResolvers from "./resolvers/ai";
 
 const customScalars = {
   JSON: GraphQLJSON,
@@ -29,4 +30,5 @@ export const resolvers = mergeResolvers([
   pipelineResolvers,
   activityResolvers,
   analyticsResolvers,
+  aiResolvers,
 ]);

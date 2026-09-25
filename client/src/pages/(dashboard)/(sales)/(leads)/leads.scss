@@ -402,3 +402,23 @@
   font-size: 1.1rem;
   color: var(--text-tertiary);
 }
+
+// Header actions and the AI error banner.
+.leads {
+  .leads-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .leads-error {
+    margin: 0 0 1.6rem;
+    padding: 1rem 1.4rem;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--accent-error);
+    font-size: 1.3rem;
+  }
+}
