@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AlertDialog } from './AlertDialog';
+import './dialogs.scss';
 
 interface DialogState {
   isOpen: boolean;

@@ -1,4 +1,5 @@
-import './dialogs.scss';
+import Modal from '../ui/modal';
+import Button from '../ui/button';
 
 interface AlertDialogProps {
   title: string;
@@ -6,25 +7,24 @@ interface AlertDialogProps {
   onClose: () => void;
 }
 
-export const AlertDialog = ({ title, message, onClose }: AlertDialogProps) => {
-  return (
-    <div className="dialog-overlay" onClick={onClose} role="presentation">
-      <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
-        <div className="dialog-header">
-          <h2>{title}</h2>
-          <button className="dialog-close" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
-        <div className="dialog-body">
-          <p>{message}</p>
-        </div>
-        <div className="dialog-footer">
-          <button className="btn-primary" onClick={onClose}>
-            OK
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+/**
+ * Built on the shared Modal primitive, like ConfirmDialog.
+ *
+ * Note that most *outcome* messages now go through the toast system instead —
+ * a modal the user must dismiss is the wrong shape for "saved successfully".
+ * This remains for the cases where the message genuinely must be acknowledged.
+ */
+export const AlertDialog = ({ title, message, onClose }: AlertDialogProps) => (
+  <Modal
+    title={title}
+    on_close={onClose}
+    size="sm"
+    footer={
+      <Button variant="primary" onClick={onClose}>
+        OK
+      </Button>
+    }
+  >
+    <p className="dialog-message">{message}</p>
+  </Modal>
+);

@@ -79,7 +79,7 @@ describe('ConfirmDialog', () => {
       />
     );
 
-    const closeButton = screen.getByLabelText('Close');
+    const closeButton = screen.getByLabelText('Close dialog');
     await user.click(closeButton);
 
     expect(mockOnCancel).toHaveBeenCalledOnce();
