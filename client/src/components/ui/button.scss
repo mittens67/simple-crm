@@ -107,3 +107,12 @@
     transform: rotate(360deg);
   }
 }
+
+// Anchor rendered as a button: cancel the default link underline.
+.ui-button-link {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+}

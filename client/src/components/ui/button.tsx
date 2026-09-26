@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import './button.scss';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -57,3 +58,37 @@ const Button = ({
 );
 
 export default Button;
+
+interface ButtonLinkProps {
+  to: string;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: ReactNode;
+  children: ReactNode;
+  title?: string;
+}
+
+/**
+ * A link that looks like a button.
+ *
+ * Kept distinct from Button rather than given an `as` prop: navigation and
+ * action are different things, and a real anchor keeps middle-click, "open in
+ * new tab" and the browser's own affordances working.
+ */
+export const ButtonLink = ({
+  to,
+  variant = 'secondary',
+  size = 'md',
+  icon,
+  children,
+  title,
+}: ButtonLinkProps) => (
+  <Link
+    to={to}
+    title={title}
+    className={`ui-button ui-button-${variant} ui-button-${size} ui-button-link`}
+  >
+    {icon}
+    {children}
+  </Link>
+);

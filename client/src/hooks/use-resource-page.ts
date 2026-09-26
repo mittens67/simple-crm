@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useDialog } from '../components/dialogs/DialogProvider';
+import { useToast } from '../components/ui';
 
 interface CrudLike<T, TInput> {
   create: (input: TInput) => Promise<T>;
@@ -23,16 +24,22 @@ interface ResourcePageOptions<T, TInput> {
  * create handler, an update handler and a delete handler, each wrapped in the
  * same try/catch that set hook error state and then awaited a blocking alert
  * dialog — roughly forty lines per page with only the noun changed.
+ *
+ * Outcomes are now toasts rather than modal alerts: a dialog the user must
+ * dismiss is the wrong shape for "lead saved". The confirm dialog stays for
+ * deletion, where a real decision is being asked for.
  */
 export const useResourcePage = <T extends { id: string }, TInput>({
   crud,
   noun,
   debounce_ms = 300,
 }: ResourcePageOptions<T, TInput>) => {
-  const { showAlert, showConfirm } = useDialog();
+  const { showConfirm } = useDialog();
+  const toast = useToast();
   const [search_input, set_search_input] = useState('');
   const [modal_open, set_modal_open] = useState(false);
   const [editing, set_editing] = useState<T | null>(null);
+  const [saving, set_saving] = useState(false);
 
   const { set_search } = crud;
   useEffect(() => {
@@ -41,36 +48,39 @@ export const useResourcePage = <T extends { id: string }, TInput>({
   }, [search_input, set_search, debounce_ms]);
 
   const report = useCallback(
-    async (err: unknown, action: string) => {
-      const message = err instanceof Error ? err.message : `Failed to ${action} ${noun}`;
+    (err: unknown, fallback: string) => {
+      const message = err instanceof Error ? err.message : fallback;
       crud.set_error(message);
-      await showAlert('Error', `Error ${action}ing ${noun}: ${message}`);
+      toast.error(message);
     },
-    [crud, noun, showAlert]
+    [crud, toast]
   );
 
   const submit = useCallback(
     async (input: TInput) => {
+      set_saving(true);
+      const is_edit = Boolean(editing);
       try {
-        if (editing) {
-          await crud.update(editing.id, input);
-        } else {
-          await crud.create(input);
-        }
+        if (editing) await crud.update(editing.id, input);
+        else await crud.create(input);
+
         set_modal_open(false);
         set_editing(null);
+        toast.success(`${noun[0].toUpperCase()}${noun.slice(1)} ${is_edit ? 'updated' : 'created'}`);
       } catch (err) {
-        await report(err, editing ? 'updat' : 'creat');
+        report(err, `Failed to ${is_edit ? 'update' : 'create'} ${noun}`);
+      } finally {
+        set_saving(false);
       }
     },
-    [crud, editing, report]
+    [crud, editing, noun, report, toast]
   );
 
   const remove = useCallback(
     async (id: string) => {
       const confirmed = await showConfirm({
         title: `Delete ${noun}`,
-        message: `Are you sure you want to delete this ${noun}?`,
+        message: `Are you sure you want to delete this ${noun}? This cannot be undone.`,
         confirmText: 'Delete',
         cancelText: 'Cancel',
       });
@@ -78,11 +88,12 @@ export const useResourcePage = <T extends { id: string }, TInput>({
 
       try {
         await crud.remove(id);
+        toast.success(`${noun[0].toUpperCase()}${noun.slice(1)} deleted`);
       } catch (err) {
-        await report(err, 'delet');
+        report(err, `Failed to delete ${noun}`);
       }
     },
-    [crud, noun, report, showAlert, showConfirm]
+    [crud, noun, report, showConfirm, toast]
   );
 
   const open_create = useCallback(() => {
@@ -105,6 +116,7 @@ export const useResourcePage = <T extends { id: string }, TInput>({
     set_search_input,
     modal_open,
     editing,
+    saving,
     submit,
     remove,
     open_create,

@@ -1,25 +1,36 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useLeads, useUsers } from '../../../../hooks';
 import { useResourcePage } from '../../../../hooks/use-resource-page';
+import { useLeadScoring } from '../../../../hooks/use-lead-scoring';
 import type { Lead, LeadInput } from '../../../../types/lead';
-import LoadingSpinner from '../../../../components/ui/loading-spinner';
-import Pagination from '../../../../components/ui/pagination';
+import {
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  Pagination,
+  tone_for_status,
+  type Column,
+} from '../../../../components/ui';
+import ListPage from '../../../../components/layout/list-page';
+import { LeadScoreBadge, LeadInsight } from '../../../../components/ai/lead-score';
 import LeadModal from './lead-modal';
 import LeadView from './lead-view';
-import { useLeadScoring } from '../../../../hooks/use-lead-scoring';
-import { LeadScoreBadge, LeadInsight } from '../../../../components/ai/lead-score';
-import './leads.scss';
 
 const Leads = () => {
   const { can } = useAuth();
   const leads = useLeads();
   const { items: users } = useUsers();
+  const scoring = useLeadScoring();
   const [viewing, set_viewing] = useState<Lead | null>(null);
+  const [insight_for, set_insight_for] = useState<Lead | null>(null);
 
   const page = useResourcePage<Lead, LeadInput>({ crud: leads, noun: 'lead' });
-  const scoring = useLeadScoring();
-  const [insight_for, set_insight_for] = useState<Lead | null>(null);
+
+  const is_terminal = (lead: Lead) => lead.status === 'Archived' || lead.status === 'Converted';
 
   const show_insight = async (lead: Lead) => {
     // Already scored: show what we have. Unscored: score it, then show.
@@ -27,111 +38,150 @@ const Leads = () => {
     set_insight_for((scored as Lead) ?? lead);
   };
 
-  const is_terminal = (lead: Lead) => lead.status === 'Archived' || lead.status === 'Converted';
-
-  if (leads.loading && leads.items.length === 0) return <LoadingSpinner />;
-
-  return (
-    <div className="leads">
-      <div className="leads-header">
-        <h1>Leads</h1>
-        <div className="leads-actions">
-          {can('leads.update') && (
-            <button
-              className="btn-secondary"
-              onClick={() => scoring.score_batch(5)}
-              disabled={scoring.bulk_loading}
-              title="Score the next few unscored leads"
-            >
-              {scoring.bulk_loading ? 'Scoring…' : '✨ Score leads'}
-            </button>
-          )}
-          {can('leads.create') && (
-            <button className="btn-primary" onClick={page.open_create}>
-              + New Lead
-            </button>
+  const columns: Column<Lead>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      sort_value: (lead) => lead.name,
+      render: (lead) => (
+        <Link to={`/leads/${lead.id}`} className="list-cell-primary">
+          {lead.name}
+        </Link>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      sort_value: (lead) => lead.email,
+      hide_on_mobile: true,
+      render: (lead) => lead.email,
+    },
+    {
+      key: 'phone',
+      header: 'Phone',
+      hide_on_mobile: true,
+      render: (lead) => lead.phone,
+    },
+    {
+      key: 'score',
+      header: 'Score',
+      // Unscored leads sort last rather than as zero.
+      sort_value: (lead) => lead.ai_score ?? null,
+      render: (lead) => (
+        <LeadScoreBadge
+          lead={lead}
+          scoring={scoring.is_scoring(lead.id)}
+          on_score={can('leads.update') ? () => show_insight(lead) : undefined}
+        />
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sort_value: (lead) => lead.status,
+      render: (lead) => <Badge tone={tone_for_status(lead.status)}>{lead.status}</Badge>,
+    },
+    {
+      key: 'rep',
+      header: 'Assigned Rep',
+      sort_value: (lead) => lead.assigned_rep?.name ?? null,
+      hide_on_mobile: true,
+      render: (lead) => lead.assigned_rep?.name ?? <span className="muted">Unassigned</span>,
+    },
+    {
+      key: 'customer',
+      header: 'Converted To',
+      hide_on_mobile: true,
+      render: (lead) =>
+        lead.customer ? (
+          <Link to={`/customers/${lead.customer.id}`}>{lead.customer.name}</Link>
+        ) : (
+          <span className="muted">—</span>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (lead) => (
+        <div className="list-row-actions">
+          {can('leads.update') &&
+            (is_terminal(lead) ? (
+              <Button size="sm" onClick={() => set_viewing(lead)}>
+                View
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => page.open_edit(lead)}>
+                Edit
+              </Button>
+            ))}
+          {can('leads.delete') && !is_terminal(lead) && (
+            <Button size="sm" variant="danger" onClick={() => page.remove(lead.id)}>
+              Archive
+            </Button>
           )}
         </div>
-      </div>
+      ),
+    },
+  ];
 
-      <div className="leads-search">
-        <input
-          type="text"
-          placeholder="Search leads by name, email, or phone..."
-          value={page.search_input}
-          onChange={(e) => page.set_search_input(e.target.value)}
-        />
-      </div>
-
-      {scoring.error && (
-        <p className="leads-error" role="alert">
-          {scoring.error}
-        </p>
-      )}
-
-      {insight_for && (
-        <LeadInsight lead={insight_for} is_live={scoring.is_live} />
-      )}
-
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Score</th>
-            <th>Status</th>
-            <th>Assigned Rep</th>
-            <th>Converted To</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leads.items.length === 0 && (
-            <tr>
-              <td colSpan={8} className="table-empty">
-                {page.search_input ? 'No leads match that search.' : 'No leads yet.'}
-              </td>
-            </tr>
+  return (
+    <ListPage
+      title="Leads"
+      description="Inbound enquiries, from first contact through to conversion."
+      search={{
+        value: page.search_input,
+        on_change: page.set_search_input,
+        placeholder: 'Search leads by name, email, or phone',
+        result_count: leads.total,
+      }}
+      actions={
+        <>
+          {can('leads.update') && (
+            <Button
+              icon={<Sparkles />}
+              loading={scoring.bulk_loading}
+              onClick={() => scoring.score_batch(5)}
+              title="Score the next few unscored leads"
+            >
+              Score leads
+            </Button>
           )}
-          {leads.items.map((lead) => (
-            <tr key={lead.id}>
-              <td>{lead.name}</td>
-              <td>{lead.email}</td>
-              <td>{lead.phone}</td>
-              <td>
-                <LeadScoreBadge
-                  lead={lead}
-                  scoring={scoring.is_scoring(lead.id)}
-                  on_score={can('leads.update') ? () => show_insight(lead) : undefined}
-                />
-              </td>
-              <td>
-                <span className={`status status-${lead.status.toLowerCase()}`}>{lead.status}</span>
-              </td>
-              <td>{lead.assigned_rep?.name || 'Unassigned'}</td>
-              <td>{lead.customer?.name || '-'}</td>
-              <td className="actions">
-                {can('leads.update') && !is_terminal(lead) && (
-                  <button className="btn-small" onClick={() => page.open_edit(lead)}>
-                    Edit
-                  </button>
-                )}
-                {can('leads.update') && is_terminal(lead) && (
-                  <button className="btn-small" onClick={() => set_viewing(lead)}>
-                    View
-                  </button>
-                )}
-                {can('leads.delete') && !is_terminal(lead) && (
-                  <button className="btn-small btn-danger" onClick={() => page.remove(lead.id)}>
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          {can('leads.create') && (
+            <Button variant="primary" icon={<Plus />} onClick={page.open_create}>
+              New Lead
+            </Button>
+          )}
+        </>
+      }
+    >
+      {insight_for && <LeadInsight lead={insight_for} is_live={scoring.is_live} />}
+
+      <DataTable
+        caption="Leads"
+        columns={columns}
+        rows={leads.items}
+        row_key={(lead) => lead.id}
+        loading={leads.loading}
+        empty={
+          <EmptyState
+            icon={<UserPlus />}
+            title={page.search_input ? 'No leads match that search' : 'No leads yet'}
+            description={
+              page.search_input
+                ? 'Try a different name, email or phone number.'
+                : 'Leads appear here as enquiries come in.'
+            }
+            action={
+              !page.search_input && can('leads.create') ? (
+                <Button variant="primary" icon={<Plus />} onClick={page.open_create}>
+                  New Lead
+                </Button>
+              ) : undefined
+            }
+          />
+        }
+      />
 
       <Pagination
         offset={leads.offset}
@@ -147,11 +197,12 @@ const Leads = () => {
         <LeadModal
           lead={page.editing}
           users={users}
+          saving={page.saving}
           on_save={page.submit}
           on_close={page.close_modal}
         />
       )}
-    </div>
+    </ListPage>
   );
 };
 

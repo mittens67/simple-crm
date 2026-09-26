@@ -4,6 +4,7 @@ import type { Deal, DealInput, Pipeline } from '../../../../types/deal';
 import { LOST_REASONS, LOST_REASON_LABELS } from '../../../../types/deal';
 import { DEAL_STATUSES } from '../../../../types/common';
 import { PIPELINES_QUERY } from '../../../../lib/graphql-queries';
+import { Button, Input, Modal, Select } from '../../../../components/ui';
 
 interface Customer {
   id: string;
@@ -19,6 +20,7 @@ interface DealModalProps {
   deal: Deal | null;
   customers: Customer[];
   users: User[];
+  saving?: boolean;
   on_save: (input: DealInput) => void;
   on_close: () => void;
 }
@@ -35,23 +37,43 @@ const empty_form = {
   lost_reason: '',
 };
 
-/** Dates come back as ISO strings; <input type="date"> wants yyyy-mm-dd. */
-const to_date_input = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
+/** Dates arrive as ISO strings; <input type="date"> needs yyyy-mm-dd. */
+const to_date_input = (iso?: string | null) =>
+  iso ? new Date(iso).toISOString().slice(0, 10) : '';
 
-const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps) => {
+const validate = (form: typeof empty_form) => {
+  const errors: Partial<Record<keyof typeof empty_form, string>> = {};
+
+  if (!form.title.trim()) errors.title = 'Title is required';
+  if (!form.customer_id) errors.customer_id = 'Choose a customer';
+  if (!form.owner_id) errors.owner_id = 'Choose an owner';
+
+  const value = Number(form.value);
+  if (form.value === '') errors.value = 'Value is required';
+  else if (!Number.isFinite(value) || value < 0) errors.value = 'Value cannot be negative';
+
+  // The server rejects a lost deal with no reason, so ask for it here.
+  if (form.status === 'Lost' && !form.lost_reason) {
+    errors.lost_reason = 'A reason is required when marking a deal lost';
+  }
+
+  return errors;
+};
+
+const DealModal = ({ deal, customers, users, saving, on_save, on_close }: DealModalProps) => {
   const [form_data, set_form_data] = useState(empty_form);
+  const [errors, set_errors] = useState<ReturnType<typeof validate>>({});
+  const [submitted, set_submitted] = useState(false);
+
   const { data } = useQuery(PIPELINES_QUERY);
   const pipelines = useMemo(() => (data?.pipelines ?? []) as Pipeline[], [data]);
 
   useEffect(() => {
     if (!deal) {
-      // Default to the default pipeline so a new deal lands somewhere sensible.
-      const fallback = pipelines.find((p) => p.is_default) ?? pipelines[0];
-      set_form_data({
-        ...empty_form,
-        pipeline_id: fallback?.id ?? '',
-        stage_id: '',
-      });
+      const fallback = pipelines.find((pipeline) => pipeline.is_default) ?? pipelines[0];
+      set_form_data({ ...empty_form, pipeline_id: fallback?.id ?? '' });
+      set_errors({});
+      set_submitted(false);
       return;
     }
     set_form_data({
@@ -67,23 +89,30 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
     });
   }, [deal, pipelines]);
 
-  const selected_pipeline = pipelines.find((p) => p.id === form_data.pipeline_id);
+  const selected_pipeline = pipelines.find((pipeline) => pipeline.id === form_data.pipeline_id);
   const stages = selected_pipeline?.stages ?? [];
 
-  const handle_change = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  const update = (field: keyof typeof empty_form) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
-    set_form_data((prev) => ({
-      ...prev,
-      [name]: value,
+    const next = {
+      ...form_data,
+      [field]: event.target.value,
       // Changing pipeline invalidates the chosen stage.
-      ...(name === 'pipeline_id' ? { stage_id: '' } : {}),
-    }));
+      ...(field === 'pipeline_id' ? { stage_id: '' } : {}),
+    };
+    set_form_data(next);
+    if (submitted) set_errors(validate(next));
   };
 
-  const handle_submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handle_submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    set_submitted(true);
+
+    const found = validate(form_data);
+    set_errors(found);
+    if (Object.keys(found).length > 0) return;
+
     const input: DealInput = {
       title: form_data.title,
       customer_id: form_data.customer_id,
@@ -93,163 +122,127 @@ const DealModal = ({ deal, customers, users, on_save, on_close }: DealModalProps
       expected_close_date: form_data.expected_close_date || null,
     };
 
-    // Pipeline and stage are only sent on create; moving stage afterwards is
-    // its own mutation so that stage_entered_at is stamped correctly.
+    // Pipeline and stage are set only on create. Moving stage afterwards goes
+    // through moveDealToStage, so stage_entered_at is stamped correctly.
     if (!deal) {
       input.pipeline_id = form_data.pipeline_id || null;
       input.stage_id = form_data.stage_id || null;
     }
 
     if (form_data.status === 'Lost') {
-      input.lost_reason = (form_data.lost_reason || 'Other') as Deal['lost_reason'];
+      input.lost_reason = form_data.lost_reason as Deal['lost_reason'];
     }
 
     on_save(input);
   };
 
   return (
-    <div className="modal-overlay" onClick={on_close}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{deal ? 'Edit Deal' : 'New Deal'}</h2>
-          <button className="modal-close" onClick={on_close}>
-            ✕
-          </button>
-        </div>
+    <Modal
+      title={deal ? 'Edit Deal' : 'New Deal'}
+      on_close={on_close}
+      footer={
+        <>
+          <Button onClick={on_close} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" form="deal-form" loading={saving}>
+            {deal ? 'Update' : 'Create'}
+          </Button>
+        </>
+      }
+    >
+      <form id="deal-form" onSubmit={handle_submit} noValidate>
+        <Input
+          label="Title"
+          required
+          value={form_data.title}
+          onChange={update('title')}
+          error={errors.title}
+        />
+        <Select
+          label="Customer"
+          required
+          value={form_data.customer_id}
+          onChange={update('customer_id')}
+          placeholder="Select a customer"
+          error={errors.customer_id}
+          options={customers.map((customer) => ({ value: customer.id, label: customer.name }))}
+        />
+        <Input
+          label="Value"
+          type="number"
+          required
+          min="0"
+          step="0.01"
+          value={form_data.value}
+          onChange={update('value')}
+          error={errors.value}
+        />
+        <Select
+          label="Owner"
+          required
+          value={form_data.owner_id}
+          onChange={update('owner_id')}
+          placeholder="Select an owner"
+          error={errors.owner_id}
+          options={users.map((user) => ({ value: user.id, label: user.name }))}
+        />
 
-        <form onSubmit={handle_submit} className="modal-form">
-          <div className="form-group">
-            <label>Title *</label>
-            <input
-              type="text"
-              name="title"
-              value={form_data.title}
-              onChange={handle_change}
-              required
+        {!deal && (
+          <>
+            <Select
+              label="Pipeline"
+              value={form_data.pipeline_id}
+              onChange={update('pipeline_id')}
+              options={pipelines.map((pipeline) => ({
+                value: pipeline.id,
+                label: pipeline.is_default ? `${pipeline.name} (default)` : pipeline.name,
+              }))}
             />
-          </div>
-
-          <div className="form-group">
-            <label>Customer *</label>
-            <select
-              name="customer_id"
-              value={form_data.customer_id}
-              onChange={handle_change}
-              required
-            >
-              <option value="">Select a customer</option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Value *</label>
-            <input
-              type="number"
-              name="value"
-              value={form_data.value}
-              onChange={handle_change}
-              step="0.01"
-              min="0"
-              required
+            <Select
+              label="Stage"
+              value={form_data.stage_id}
+              onChange={update('stage_id')}
+              placeholder="First stage"
+              hint="Leave blank to start at the beginning of the pipeline."
+              options={stages.map((stage) => ({
+                value: stage.id,
+                label: `${stage.name} (${stage.probability}%)`,
+              }))}
             />
-          </div>
+          </>
+        )}
 
-          <div className="form-group">
-            <label>Owner *</label>
-            <select name="owner_id" value={form_data.owner_id} onChange={handle_change} required>
-              <option value="">Select an owner</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <Input
+          label="Expected Close Date"
+          type="date"
+          value={form_data.expected_close_date}
+          onChange={update('expected_close_date')}
+        />
 
-          {!deal && (
-            <>
-              <div className="form-group">
-                <label>Pipeline</label>
-                <select name="pipeline_id" value={form_data.pipeline_id} onChange={handle_change}>
-                  {pipelines.map((pipeline) => (
-                    <option key={pipeline.id} value={pipeline.id}>
-                      {pipeline.name}
-                      {pipeline.is_default ? ' (default)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <Select
+          label="Status"
+          value={form_data.status}
+          onChange={update('status')}
+          options={DEAL_STATUSES.map((status) => ({ value: status, label: status }))}
+        />
 
-              <div className="form-group">
-                <label>Stage</label>
-                <select name="stage_id" value={form_data.stage_id} onChange={handle_change}>
-                  <option value="">First stage</option>
-                  {stages.map((stage) => (
-                    <option key={stage.id} value={stage.id}>
-                      {stage.name} ({stage.probability}%)
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-
-          <div className="form-group">
-            <label>Expected Close Date</label>
-            <input
-              type="date"
-              name="expected_close_date"
-              value={form_data.expected_close_date}
-              onChange={handle_change}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Status</label>
-            <select name="status" value={form_data.status} onChange={handle_change}>
-              {DEAL_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {form_data.status === 'Lost' && (
-            <div className="form-group">
-              <label>Lost Reason *</label>
-              <select
-                name="lost_reason"
-                value={form_data.lost_reason}
-                onChange={handle_change}
-                required
-              >
-                <option value="">Select a reason</option>
-                {LOST_REASONS.map((reason) => (
-                  <option key={reason} value={reason}>
-                    {LOST_REASON_LABELS[reason]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={on_close}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary">
-              {deal ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {form_data.status === 'Lost' && (
+          <Select
+            label="Lost Reason"
+            required
+            value={form_data.lost_reason}
+            onChange={update('lost_reason')}
+            placeholder="Select a reason"
+            error={errors.lost_reason}
+            options={LOST_REASONS.map((reason) => ({
+              value: reason,
+              label: LOST_REASON_LABELS[reason],
+            }))}
+          />
+        )}
+      </form>
+    </Modal>
   );
 };
 

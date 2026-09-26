@@ -1,11 +1,18 @@
+import { Link } from 'react-router-dom';
+import { Building2, Plus } from 'lucide-react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useCustomers, useUsers } from '../../../../hooks';
 import { useResourcePage } from '../../../../hooks/use-resource-page';
 import type { Customer, CustomerInput } from '../../../../types/customer';
-import LoadingSpinner from '../../../../components/ui/loading-spinner';
-import Pagination from '../../../../components/ui/pagination';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  Pagination,
+  type Column,
+} from '../../../../components/ui';
+import ListPage from '../../../../components/layout/list-page';
 import CustomerModal from './customer-modal';
-import '../(leads)/leads.scss';
 
 const Customers = () => {
   const { can } = useAuth();
@@ -14,68 +21,94 @@ const Customers = () => {
 
   const page = useResourcePage<Customer, CustomerInput>({ crud: customers, noun: 'customer' });
 
-  if (customers.loading && customers.items.length === 0) return <LoadingSpinner />;
+  const columns: Column<Customer>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      sort_value: (customer) => customer.name,
+      render: (customer) => (
+        <Link to={`/customers/${customer.id}`} className="list-cell-primary">
+          {customer.name}
+        </Link>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      sort_value: (customer) => customer.email,
+      render: (customer) => customer.email,
+    },
+    {
+      key: 'phone',
+      header: 'Phone',
+      hide_on_mobile: true,
+      render: (customer) => customer.phone,
+    },
+    {
+      key: 'rep',
+      header: 'Assigned Rep',
+      sort_value: (customer) => customer.assigned_rep?.name ?? null,
+      hide_on_mobile: true,
+      render: (customer) =>
+        customer.assigned_rep?.name ?? <span className="muted">Unassigned</span>,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (customer) => (
+        <div className="list-row-actions">
+          {can('customers.update') && (
+            <Button size="sm" onClick={() => page.open_edit(customer)}>
+              Edit
+            </Button>
+          )}
+          {can('customers.delete') && (
+            <Button size="sm" variant="danger" onClick={() => page.remove(customer.id)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="leads">
-      <div className="leads-header">
-        <h1>Customers</h1>
-        {can('customers.create') && (
-          <button className="btn-primary" onClick={page.open_create}>
-            + New Customer
-          </button>
-        )}
-      </div>
-
-      <div className="leads-search">
-        <input
-          type="text"
-          placeholder="Search customers by name, email, or phone..."
-          value={page.search_input}
-          onChange={(e) => page.set_search_input(e.target.value)}
-        />
-      </div>
-
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Assigned Rep</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customers.items.length === 0 && (
-            <tr>
-              <td colSpan={5} className="table-empty">
-                {page.search_input ? 'No customers match that search.' : 'No customers yet.'}
-              </td>
-            </tr>
-          )}
-          {customers.items.map((customer) => (
-            <tr key={customer.id}>
-              <td>{customer.name}</td>
-              <td>{customer.email}</td>
-              <td>{customer.phone}</td>
-              <td>{customer.assigned_rep?.name || 'Unassigned'}</td>
-              <td className="actions">
-                {can('customers.update') && (
-                  <button className="btn-small" onClick={() => page.open_edit(customer)}>
-                    Edit
-                  </button>
-                )}
-                {can('customers.delete') && (
-                  <button className="btn-small btn-danger" onClick={() => page.remove(customer.id)}>
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <ListPage
+      title="Customers"
+      description="Accounts you have won, and the reps who own them."
+      search={{
+        value: page.search_input,
+        on_change: page.set_search_input,
+        placeholder: 'Search customers by name, email, or phone',
+        result_count: customers.total,
+      }}
+      actions={
+        can('customers.create') && (
+          <Button variant="primary" icon={<Plus />} onClick={page.open_create}>
+            New Customer
+          </Button>
+        )
+      }
+    >
+      <DataTable
+        caption="Customers"
+        columns={columns}
+        rows={customers.items}
+        row_key={(customer) => customer.id}
+        loading={customers.loading}
+        empty={
+          <EmptyState
+            icon={<Building2 />}
+            title={page.search_input ? 'No customers match that search' : 'No customers yet'}
+            description={
+              page.search_input
+                ? 'Try a different name, email or phone number.'
+                : 'Customers are created automatically when a lead converts.'
+            }
+          />
+        }
+      />
 
       <Pagination
         offset={customers.offset}
@@ -89,11 +122,12 @@ const Customers = () => {
         <CustomerModal
           customer={page.editing}
           users={users}
+          saving={page.saving}
           on_save={page.submit}
           on_close={page.close_modal}
         />
       )}
-    </div>
+    </ListPage>
   );
 };
 

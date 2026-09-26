@@ -2,7 +2,7 @@
 // Table, Card or Badge component at all — `<button className="btn-primary">`
 // appeared around forty times with its styles living inside a page stylesheet.
 
-export { default as Button } from './button';
+export { default as Button, ButtonLink } from './button';
 export type { ButtonVariant, ButtonSize } from './button';
 
 export { Field, Input, Textarea, Select, Checkbox } from './field';
@@ -12,6 +12,7 @@ export { default as DataTable } from './data-table';
 export type { Column } from './data-table';
 
 export { default as Pagination } from './pagination';
+export { default as SearchInput } from './search-input';
 
 export {
   Badge,

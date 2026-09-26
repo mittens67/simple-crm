@@ -1,12 +1,20 @@
+import { LifeBuoy, Plus } from 'lucide-react';
 import { useAuth } from '../../../auth/auth-context';
 import { useSupportTickets, useCustomers, useUsers } from '../../../hooks';
 import { useResourcePage } from '../../../hooks/use-resource-page';
 import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
 import { TICKET_STATUS_LABELS } from '../../../types/common';
-import LoadingSpinner from '../../../components/ui/loading-spinner';
-import Pagination from '../../../components/ui/pagination';
+import {
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  Pagination,
+  tone_for_status,
+  type Column,
+} from '../../../components/ui';
+import ListPage from '../../../components/layout/list-page';
 import SupportTicketModal from './support-ticket-modal';
-import '../(sales)/(leads)/leads.scss';
 
 const Support = () => {
   const { can } = useAuth();
@@ -19,88 +27,112 @@ const Support = () => {
     noun: 'ticket',
   });
 
-  if (tickets.loading && tickets.items.length === 0) return <LoadingSpinner />;
+  const columns: Column<SupportTicket>[] = [
+    {
+      key: 'issue',
+      header: 'Issue',
+      sort_value: (ticket) => ticket.issue_summary,
+      render: (ticket) => <span className="list-cell-primary">{ticket.issue_summary}</span>,
+    },
+    {
+      key: 'customer',
+      header: 'Customer',
+      sort_value: (ticket) => ticket.customer?.name ?? null,
+      hide_on_mobile: true,
+      render: (ticket) => ticket.customer?.name ?? <span className="muted">—</span>,
+    },
+    {
+      key: 'agent',
+      header: 'Agent',
+      sort_value: (ticket) => ticket.assigned_agent?.name ?? null,
+      hide_on_mobile: true,
+      render: (ticket) => ticket.assigned_agent?.name ?? <span className="muted">Unassigned</span>,
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      // Sorted by urgency, not alphabetically — "Urgent" before "Low".
+      sort_value: (ticket) => ({ Urgent: 0, High: 1, Medium: 2, Low: 3 })[ticket.priority],
+      render: (ticket) => <Badge tone={tone_for_status(ticket.priority)}>{ticket.priority}</Badge>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sort_value: (ticket) => ticket.status,
+      render: (ticket) => (
+        <Badge tone={tone_for_status(ticket.status)}>{TICKET_STATUS_LABELS[ticket.status]}</Badge>
+      ),
+    },
+    {
+      key: 'sla',
+      header: 'SLA',
+      sort_value: (ticket) => (ticket.is_sla_breached ? 0 : 1),
+      render: (ticket) =>
+        ticket.is_sla_breached ? (
+          <Badge tone="danger" title={`First response due ${new Date(ticket.sla_due_at).toLocaleString()}`}>
+            Breached
+          </Badge>
+        ) : (
+          <Badge tone="success">On track</Badge>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (ticket) => (
+        <div className="list-row-actions">
+          {can('support_tickets.update') && (
+            <Button size="sm" onClick={() => page.open_edit(ticket)}>
+              Edit
+            </Button>
+          )}
+          {can('support_tickets.delete') && (
+            <Button size="sm" variant="danger" onClick={() => page.remove(ticket.id)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="leads">
-      <div className="leads-header">
-        <h1>Support Tickets</h1>
-        {can('support_tickets.create') && (
-          <button className="btn-primary" onClick={page.open_create}>
-            + New Ticket
-          </button>
-        )}
-      </div>
-
-      <div className="leads-search">
-        <input
-          type="text"
-          placeholder="Search tickets by issue..."
-          value={page.search_input}
-          onChange={(e) => page.set_search_input(e.target.value)}
-        />
-      </div>
-
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Issue</th>
-            <th>Customer</th>
-            <th>Assigned Agent</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>SLA</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.items.length === 0 && (
-            <tr>
-              <td colSpan={7} className="table-empty">
-                {page.search_input ? 'No tickets match that search.' : 'No tickets yet.'}
-              </td>
-            </tr>
-          )}
-          {tickets.items.map((ticket) => (
-            <tr key={ticket.id}>
-              <td>{ticket.issue_summary}</td>
-              <td>{ticket.customer?.name || '-'}</td>
-              <td>{ticket.assigned_agent?.name || 'Unassigned'}</td>
-              <td>
-                <span className={`priority priority-${ticket.priority.toLowerCase()}`}>
-                  {ticket.priority}
-                </span>
-              </td>
-              <td>
-                <span className={`status status-${ticket.status.toLowerCase()}`}>
-                  {TICKET_STATUS_LABELS[ticket.status]}
-                </span>
-              </td>
-              <td>
-                {ticket.is_sla_breached ? (
-                  <span className="sla sla-breached" title={`Due ${new Date(ticket.sla_due_at).toLocaleString()}`}>
-                    Breached
-                  </span>
-                ) : (
-                  <span className="sla sla-ok">On track</span>
-                )}
-              </td>
-              <td className="actions">
-                {can('support_tickets.update') && (
-                  <button className="btn-small" onClick={() => page.open_edit(ticket)}>
-                    Edit
-                  </button>
-                )}
-                {can('support_tickets.delete') && (
-                  <button className="btn-small btn-danger" onClick={() => page.remove(ticket.id)}>
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <ListPage
+      title="Support Tickets"
+      description="Your queue, with first-response SLA tracking."
+      search={{
+        value: page.search_input,
+        on_change: page.set_search_input,
+        placeholder: 'Search tickets by issue',
+        result_count: tickets.total,
+      }}
+      actions={
+        can('support_tickets.create') && (
+          <Button variant="primary" icon={<Plus />} onClick={page.open_create}>
+            New Ticket
+          </Button>
+        )
+      }
+    >
+      <DataTable
+        caption="Support tickets"
+        columns={columns}
+        rows={tickets.items}
+        row_key={(ticket) => ticket.id}
+        loading={tickets.loading}
+        empty={
+          <EmptyState
+            icon={<LifeBuoy />}
+            title={page.search_input ? 'No tickets match that search' : 'Queue is clear'}
+            description={
+              page.search_input
+                ? 'Try different wording from the issue summary.'
+                : 'New tickets will appear here as customers report problems.'
+            }
+          />
+        }
+      />
 
       <Pagination
         offset={tickets.offset}
@@ -115,11 +147,12 @@ const Support = () => {
           ticket={page.editing}
           customers={customers}
           users={users}
+          saving={page.saving}
           on_save={page.submit}
           on_close={page.close_modal}
         />
       )}
-    </div>
+    </ListPage>
   );
 };
 

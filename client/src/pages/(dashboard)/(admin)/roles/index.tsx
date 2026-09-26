@@ -1,8 +1,20 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useQuery, useMutation, gql } from '@apollo/client';
+import { Plus, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../../../auth/auth-context';
-import '../../(sales)/(leads)/leads.scss';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  DataTable,
+  EmptyState,
+  Input,
+  Modal,
+  useToast,
+  type Column,
+} from '../../../../components/ui';
+import ListPage from '../../../../components/layout/list-page';
+import { useDialog } from '../../../../components/dialogs/DialogProvider';
 import './roles.scss';
 
 const ROLES_QUERY = gql`
@@ -48,233 +60,268 @@ interface Role {
   permissions: Record<string, boolean>;
 }
 
+/** Turns "support_tickets" into "Support tickets" for the group headings. */
+const humanise = (resource: string) =>
+  resource.replace(/_/g, ' ').replace(/^./, (char) => char.toUpperCase());
+
 const Roles = () => {
   const { can } = useAuth();
-  const { data } = useQuery(ROLES_QUERY);
+  const toast = useToast();
+  const { showConfirm } = useDialog();
+  const { data, loading } = useQuery(ROLES_QUERY);
+
   const [show_modal, set_show_modal] = useState(false);
   const [edit_role, set_edit_role] = useState<Role | null>(null);
   const [role_name, set_role_name] = useState('');
   const [permissions, set_permissions] = useState<Record<string, boolean>>({});
+  const [name_error, set_name_error] = useState<string | null>(null);
+  const [saving, set_saving] = useState(false);
   const [search, set_search] = useState('');
 
   const [create_role] = useMutation(CREATE_ROLE);
   const [update_role] = useMutation(UPDATE_ROLE);
   const [delete_role] = useMutation(DELETE_ROLE);
 
-  const roles = data?.roles || [];
-  const permission_catalog = data?.permissionCatalog || [];
+  const roles: Role[] = data?.roles ?? [];
+  const catalog: string[] = data?.permissionCatalog ?? [];
 
-  const group_permissions = (perms: string[]) => {
-    const grouped: Record<string, string[]> = {};
-    perms.forEach((p) => {
-      const [resource] = p.split('.');
-      if (!grouped[resource]) grouped[resource] = [];
-      grouped[resource].push(p);
-    });
-    return grouped;
-  };
+  // Grouped by resource so the matrix is navigable; the catalog is 8 resources
+  // times 7 actions, which is unreadable as a flat list.
+  const grouped = catalog.reduce<Record<string, string[]>>((accumulator, permission) => {
+    const [resource] = permission.split('.');
+    accumulator[resource] = [...(accumulator[resource] ?? []), permission];
+    return accumulator;
+  }, {});
 
-  const handle_save = async () => {
-    if (!role_name.trim()) return;
+  const handle_save = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-    const perm_input = Object.entries(permissions)
-      .filter(([, val]) => val)
+    if (!role_name.trim()) {
+      set_name_error('Role name is required');
+      return;
+    }
+    set_name_error(null);
+    set_saving(true);
+
+    const permission_input = Object.entries(permissions)
+      .filter(([, enabled]) => enabled)
       .map(([key]) => ({ key, value: true }));
 
     try {
       if (edit_role) {
         await update_role({
-          variables: { id: edit_role.id, input: { name: role_name, permissions: perm_input } },
+          variables: { id: edit_role.id, input: { name: role_name, permissions: permission_input } },
           refetchQueries: [{ query: ROLES_QUERY }],
         });
       } else {
         await create_role({
-          variables: { input: { name: role_name, permissions: perm_input } },
+          variables: { input: { name: role_name, permissions: permission_input } },
           refetchQueries: [{ query: ROLES_QUERY }],
         });
       }
       set_show_modal(false);
-      reset_form();
+      set_edit_role(null);
+      toast.success(edit_role ? 'Role updated' : 'Role created');
     } catch (err) {
-      console.error('Error saving role:', err);
+      // This previously only reached console.error.
+      toast.error(err instanceof Error ? err.message : 'Failed to save role');
+    } finally {
+      set_saving(false);
     }
   };
 
-  const handle_delete = async (id: string) => {
-    if (confirm('Delete this role?')) {
-      try {
-        await delete_role({ variables: { id }, refetchQueries: [{ query: ROLES_QUERY }] });
-      } catch (err) {
-        console.error('Error deleting role:', err);
-      }
+  const handle_delete = async (role: Role) => {
+    // Replaces a native confirm(), which the DialogProvider exists to avoid.
+    const confirmed = await showConfirm({
+      title: 'Delete role',
+      message: `Delete "${role.name}"? Users assigned to it will lose those permissions.`,
+      confirmText: 'Delete',
+    });
+    if (!confirmed) return;
+
+    try {
+      await delete_role({ variables: { id: role.id }, refetchQueries: [{ query: ROLES_QUERY }] });
+      toast.success('Role deleted');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete role');
     }
   };
 
-  const handle_edit = (role: Role) => {
-    set_edit_role(role);
-    set_role_name(role.name);
-    set_permissions(role.permissions || {});
-    set_show_modal(true);
-  };
-
-  const reset_form = () => {
+  const open_create = () => {
     set_role_name('');
     set_permissions({});
     set_edit_role(null);
+    set_name_error(null);
+    set_show_modal(true);
   };
 
-  const toggle_permission = (perm: string) => {
-    set_permissions((prev) => ({ ...prev, [perm]: !prev[perm] }));
+  const open_edit = (role: Role) => {
+    set_edit_role(role);
+    set_role_name(role.name);
+    set_permissions(role.permissions ?? {});
+    set_name_error(null);
+    set_show_modal(true);
   };
 
-  const filtered_roles = roles.filter((r: Role) =>
-    r.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const toggle = (permission: string) =>
+    set_permissions((prev) => ({ ...prev, [permission]: !prev[permission] }));
+
+  const set_group = (group: string[], enabled: boolean) =>
+    set_permissions((prev) => ({
+      ...prev,
+      ...Object.fromEntries(group.map((permission) => [permission, enabled])),
+    }));
+
+  const filtered = roles.filter((role) => role.name.toLowerCase().includes(search.toLowerCase()));
+
+  const columns: Column<Role>[] = [
+    {
+      key: 'name',
+      header: 'Role',
+      sort_value: (role) => role.name,
+      render: (role) => <span className="list-cell-primary">{role.name}</span>,
+    },
+    {
+      key: 'permissions',
+      header: 'Permissions',
+      render: (role) => {
+        const granted = Object.entries(role.permissions ?? {}).filter(([, on]) => on);
+        if (granted.some(([key]) => key === '*')) {
+          return <Badge tone="brand">Full access</Badge>;
+        }
+        return (
+          <div className="roles-permission-list">
+            {/* A raw .join(', ') of 30+ keys was previously dumped into the cell. */}
+            {granted.slice(0, 6).map(([key]) => (
+              <Badge key={key}>{key}</Badge>
+            ))}
+            {granted.length > 6 && <span className="muted">+{granted.length - 6} more</span>}
+            {granted.length === 0 && <span className="muted">None</span>}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (role) => (
+        <div className="list-row-actions">
+          {can('roles.update') && (
+            <Button size="sm" onClick={() => open_edit(role)}>
+              Edit
+            </Button>
+          )}
+          {can('roles.delete') && (
+            <Button size="sm" variant="danger" onClick={() => handle_delete(role)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   if (!can('roles.read')) {
-    return <div className="leads">Access denied</div>;
+    return (
+      <ListPage title="Roles">
+        <EmptyState title="Access denied" description="You do not have permission to view roles." />
+      </ListPage>
+    );
   }
 
   return (
-    <div className="leads">
-      <div className="leads-header">
-        <h1>Roles</h1>
-        {can('roles.create') && (
-          <button
-            className="btn-primary"
-            onClick={() => {
-              reset_form();
-              set_show_modal(true);
-            }}
-          >
-            + Create Role
-          </button>
-        )}
-      </div>
-
-      <div className="leads-search">
-        <input
-          type="text"
-          placeholder="Search roles..."
-          value={search}
-          onChange={(e) => set_search(e.target.value)}
-        />
-      </div>
-
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Permissions</th>
-            {can('roles.update') || can('roles.delete') ? <th>Actions</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {filtered_roles.map((role: Role) => (
-            <tr key={role.id}>
-              <td>{role.name}</td>
-              <td>
-                {Object.entries(role.permissions || {})
-                  .filter(([, v]) => v)
-                  .map(([k]) => k)
-                  .join(', ') || '—'}
-              </td>
-              <td className="actions">
-                {can('roles.update') && (
-                  <button className="btn-small" onClick={() => handle_edit(role)}>
-                    Edit
-                  </button>
-                )}
-                {can('roles.delete') && (
-                  <button className="btn-danger" onClick={() => handle_delete(role.id)}>
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <ListPage
+      title="Roles"
+      description="Permission sets. A user's access is the union of every role they hold."
+      search={{
+        value: search,
+        on_change: set_search,
+        placeholder: 'Search roles',
+        result_count: filtered.length,
+      }}
+      actions={
+        can('roles.create') && (
+          <Button variant="primary" icon={<Plus />} onClick={open_create}>
+            New Role
+          </Button>
+        )
+      }
+    >
+      <DataTable
+        caption="Roles"
+        columns={columns}
+        rows={filtered}
+        row_key={(role) => role.id}
+        loading={loading}
+        empty={
+          <EmptyState
+            icon={<ShieldCheck />}
+            title={search ? 'No roles match that search' : 'No roles yet'}
+          />
+        }
+      />
 
       {show_modal && (
-        <div className="modal-overlay" onClick={() => set_show_modal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{edit_role ? 'Edit Role' : 'Create Role'}</h2>
-              <button className="modal-close" onClick={() => set_show_modal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="modal-form">
-              <div className="form-group">
-                <label>Role Name</label>
-                <input
-                  type="text"
-                  value={role_name}
-                  onChange={(e) => set_role_name(e.target.value)}
-                  placeholder="e.g., Manager"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Permissions</label>
-                <div className="permission-grid">
-                  {Object.entries(group_permissions(permission_catalog)).map(([resource, perms]) => {
-                    const all_selected = perms.every((p) => permissions[p] === true);
-                    const toggle_all = () => {
-                      const new_perms = { ...permissions };
-                      perms.forEach((p) => {
-                        new_perms[p] = !all_selected;
-                      });
-                      set_permissions(new_perms);
-                    };
-
-                    return (
-                      <div key={resource} className="permission-card">
-                        <div className="resource-header">
-                          <p className="resource-name">{resource}</p>
-                          <button
-                            type="button"
-                            className="select-all"
-                            onClick={toggle_all}
-                          >
-                            {all_selected ? 'Deselect All' : 'Select All'}
-                          </button>
-                        </div>
-                        <div className="permission-list">
-                          {perms.map((perm) => (
-                            <div key={perm} className="permission-item">
-                              <input
-                                type="checkbox"
-                                id={perm}
-                                checked={permissions[perm] === true}
-                                onChange={() => toggle_permission(perm)}
-                              />
-                              <label htmlFor={perm}>
-                                {perm.split('.')[1]}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => set_show_modal(false)}>
+        <Modal
+          title={edit_role ? 'Edit Role' : 'New Role'}
+          size="lg"
+          on_close={() => set_show_modal(false)}
+          footer={
+            <>
+              <Button onClick={() => set_show_modal(false)} disabled={saving}>
                 Cancel
-              </button>
-              <button className="btn-primary" onClick={handle_save}>
+              </Button>
+              <Button variant="primary" type="submit" form="role-form" loading={saving}>
                 {edit_role ? 'Update' : 'Create'}
-              </button>
+              </Button>
+            </>
+          }
+        >
+          <form id="role-form" onSubmit={handle_save} noValidate>
+            <Input
+              label="Role name"
+              required
+              value={role_name}
+              onChange={(event) => set_role_name(event.target.value)}
+              error={name_error}
+            />
+
+            <p className="roles-matrix-note">
+              A <code>.all</code> permission grants visibility beyond your own records — without
+              one, a read is scoped to the records assigned to you.
+            </p>
+
+            <div className="roles-matrix">
+              {Object.entries(grouped).map(([resource, group]) => {
+                const all_on = group.every((permission) => permissions[permission]);
+                return (
+                  <fieldset key={resource} className="roles-group">
+                    <legend>{humanise(resource)}</legend>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => set_group(group, !all_on)}
+                      className="roles-group-toggle"
+                    >
+                      {all_on ? 'Clear all' : 'Select all'}
+                    </Button>
+                    {group.map((permission) => (
+                      <Checkbox
+                        key={permission}
+                        label={permission.split('.').slice(1).join('.')}
+                        checked={Boolean(permissions[permission])}
+                        onChange={() => toggle(permission)}
+                      />
+                    ))}
+                  </fieldset>
+                );
+              })}
             </div>
-          </div>
-        </div>
+          </form>
+        </Modal>
       )}
-    </div>
+    </ListPage>
   );
 };
 
