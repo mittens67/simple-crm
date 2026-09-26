@@ -1,24 +1,40 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "../pages/(login)";
-import Dashboard from "../pages/(dashboard)";
-import ProtectedRoute from "./protected-route";
-import PermissionProtectedRoute from "./permission-protected-route";
-import Home from "../pages/(dashboard)/(home)";
-import Profile from "../pages/(dashboard)/(profile)";
-import Leads from "../pages/(dashboard)/(sales)/(leads)";
-import Customers from "../pages/(dashboard)/(sales)/(customers)";
-import Deals from "../pages/(dashboard)/(sales)/(deals)";
-import Support from "../pages/(dashboard)/(support)";
-import Roles from "../pages/(dashboard)/(admin)/roles";
-import Users from "../pages/(dashboard)/(admin)/users";
+import { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from './protected-route';
+import PermissionProtectedRoute from './permission-protected-route';
+import LoadingSpinner from '../components/ui/loading-spinner';
+import { ROUTES } from './routes';
 
-const Navigation = () => {
-  return (
-    <Router>
+// Login and the dashboard shell are needed on first paint. Everything else is
+// code-split, so opening the app no longer downloads every screen up front.
+import Login from '../pages/(login)';
+import Dashboard from '../pages/(dashboard)';
+
+const Home = lazy(() => import('../pages/(dashboard)/(home)'));
+const Profile = lazy(() => import('../pages/(dashboard)/(profile)'));
+const Leads = lazy(() => import('../pages/(dashboard)/(sales)/(leads)'));
+const LeadDetail = lazy(() => import('../pages/(dashboard)/(sales)/(leads)/lead-detail'));
+const Customers = lazy(() => import('../pages/(dashboard)/(sales)/(customers)'));
+const CustomerDetail = lazy(
+  () => import('../pages/(dashboard)/(sales)/(customers)/customer-detail')
+);
+const Deals = lazy(() => import('../pages/(dashboard)/(sales)/(deals)'));
+const DealDetail = lazy(() => import('../pages/(dashboard)/(sales)/(deals)/deal-detail'));
+const Pipeline = lazy(() => import('../pages/(dashboard)/(sales)/(pipeline)'));
+const Tasks = lazy(() => import('../pages/(dashboard)/(tasks)'));
+const Support = lazy(() => import('../pages/(dashboard)/(support)'));
+const Roles = lazy(() => import('../pages/(dashboard)/(admin)/roles'));
+const Users = lazy(() => import('../pages/(dashboard)/(admin)/users'));
+const NotFound = lazy(() => import('../pages/(not-found)'));
+
+const Navigation = () => (
+  <Router>
+    <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path={ROUTES.login} element={<Login />} />
+
         <Route
-          path="/"
+          path={ROUTES.home}
           element={
             <ProtectedRoute>
               <Dashboard />
@@ -26,6 +42,7 @@ const Navigation = () => {
           }
         >
           <Route index element={<Home />} />
+
           <Route
             path="leads"
             element={
@@ -35,6 +52,15 @@ const Navigation = () => {
             }
           />
           <Route
+            path="leads/:id"
+            element={
+              <PermissionProtectedRoute permission="leads.read">
+                <LeadDetail />
+              </PermissionProtectedRoute>
+            }
+          />
+
+          <Route
             path="customers"
             element={
               <PermissionProtectedRoute permission="customers.read">
@@ -42,6 +68,15 @@ const Navigation = () => {
               </PermissionProtectedRoute>
             }
           />
+          <Route
+            path="customers/:id"
+            element={
+              <PermissionProtectedRoute permission="customers.read">
+                <CustomerDetail />
+              </PermissionProtectedRoute>
+            }
+          />
+
           <Route
             path="deals"
             element={
@@ -51,6 +86,25 @@ const Navigation = () => {
             }
           />
           <Route
+            path="deals/:id"
+            element={
+              <PermissionProtectedRoute permission="deals.read">
+                <DealDetail />
+              </PermissionProtectedRoute>
+            }
+          />
+          <Route
+            path="pipeline"
+            element={
+              <PermissionProtectedRoute permission="deals.read">
+                <Pipeline />
+              </PermissionProtectedRoute>
+            }
+          />
+
+          <Route path="tasks" element={<Tasks />} />
+
+          <Route
             path="support"
             element={
               <PermissionProtectedRoute permission="support_tickets.read">
@@ -58,7 +112,9 @@ const Navigation = () => {
               </PermissionProtectedRoute>
             }
           />
+
           <Route path="profile" element={<Profile />} />
+
           <Route
             path="admin/roles"
             element={
@@ -75,10 +131,14 @@ const Navigation = () => {
               </PermissionProtectedRoute>
             }
           />
+
+          {/* Catch-all inside the shell, so an unknown URL still shows the
+              navigation rather than a bare error page. */}
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-    </Router>
-  );
-};
+    </Suspense>
+  </Router>
+);
 
 export default Navigation;

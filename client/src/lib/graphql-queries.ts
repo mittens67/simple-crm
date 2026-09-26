@@ -580,3 +580,32 @@ export const DRAFT_EMAIL_MUTATION = gql`
     draftEmail(target_type: $target_type, target_id: $target_id, instruction: $instruction)
   }
 `;
+
+// --- Single-record queries for the detail pages -----------------------------
+
+export const LEAD_QUERY = gql`
+  query GetLead($id: ID!) {
+    lead(id: $id) {
+      ...LeadFields
+    }
+  }
+  ${LEAD_FIELDS}
+`;
+
+export const CUSTOMER_QUERY = gql`
+  query GetCustomer($id: ID!) {
+    customer(id: $id) {
+      ...CustomerFields
+    }
+  }
+  ${CUSTOMER_FIELDS}
+`;
+
+export const DEAL_QUERY = gql`
+  query GetDeal($id: ID!) {
+    deal(id: $id) {
+      ...DealFields
+    }
+  }
+  ${DEAL_FIELDS}
+`;

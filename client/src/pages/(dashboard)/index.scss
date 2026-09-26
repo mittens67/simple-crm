@@ -1,12 +1,16 @@
 .dashboard {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
+  background: var(--bg-canvas);
 
   &-window {
     flex: 1;
+    min-width: 0;
     height: 100vh;
-    overflow: auto;
-    scrollbar-width: none;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 
     &::-webkit-scrollbar {
       width: 8px;
@@ -18,11 +22,24 @@
 
     &::-webkit-scrollbar-thumb {
       background: var(--scrollbar-thumb);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
 
       &:hover {
         background: var(--scrollbar-thumb-hover);
       }
+    }
+  }
+}
+
+// On mobile the sidebar is a drawer, so the shell stacks and the content pane
+// sits below the top bar rather than beside a fixed column.
+@media (max-width: 900px) {
+  .dashboard {
+    flex-direction: column;
+
+    &-window {
+      height: auto;
+      min-height: 0;
     }
   }
 }
