@@ -16,7 +16,8 @@ export const create_customer_schema = z.object({
     .regex(name_regex, 'Name can only contain letters, numbers, spaces, hyphens, and apostrophes'),
   email: z.string().min(1, 'Email is required').regex(email_regex, 'Email must be a valid email address'),
   phone: z.string().min(1, 'Phone is required').max(20, 'Phone must be 20 characters or less'),
-  assigned_rep_id: object_id.optional(),
+  // See schemas/lead.ts: a cleared <select> sends null, not undefined.
+  assigned_rep_id: object_id.nullish(),
 });
 
 export const update_customer_schema = z.object({

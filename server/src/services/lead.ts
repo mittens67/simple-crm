@@ -30,8 +30,13 @@ const UPDATABLE_FIELDS = [
 
 export class LeadService {
   private scope(context: ApolloContext, action: 'read' | 'update' | 'delete' = 'read') {
-    // Reps see the leads assigned to them; `leads.read.all` sees every lead.
-    return scope_filter_for(context, 'leads', 'assigned_rep_id', action);
+    // Reps see the leads assigned to them plus the unclaimed pool, so they can
+    // pick up an Open lead — and so a lead they just created without choosing a
+    // rep does not vanish from their own list. `leads.read.all` sees every lead.
+    return scope_filter_for(context, 'leads', 'assigned_rep_id', {
+      action,
+      include_unassigned: true,
+    });
   }
 
   async list(
@@ -80,11 +85,18 @@ export class LeadService {
 
     // Assignment drives status: attaching a rep starts work, detaching returns
     // the lead to the unclaimed pool.
+    //
+    // An explicitly chosen status always wins, though. The edit form sends
+    // assigned_rep_id on every save, so deriving unconditionally meant
+    // converting an *unassigned* lead silently reset it to Open — the customer
+    // was created and the lead stayed Open.
+    const status_was_chosen = data.status !== undefined && data.status !== lead.status;
+
     if ('assigned_rep_id' in data) {
       if (data.assigned_rep_id) {
         await assert_exists(User, data.assigned_rep_id, 'Assigned representative');
-        changes.status = 'Pending';
-      } else {
+        if (!status_was_chosen) changes.status = 'Pending';
+      } else if (!status_was_chosen) {
         changes.status = 'Open';
       }
     }

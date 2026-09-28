@@ -42,7 +42,14 @@ export const MAIN_NAV: NavItem[] = [
   { to: ROUTES.support, label: 'Support', permission: 'support_tickets.read' },
 ];
 
+/**
+ * The admin console is gated on the ability to *manage*, not to read.
+ *
+ * Reps hold `users.read` so assignment dropdowns can show colleagues' names —
+ * which meant gating this on `users.read` put an admin link in every rep's
+ * sidebar. Seeing a name in a dropdown is not the same as administering users.
+ */
 export const ADMIN_NAV: NavItem[] = [
-  { to: ROUTES.admin_roles, label: 'Roles', permission: 'roles.read' },
-  { to: ROUTES.admin_users, label: 'Users', permission: 'users.read' },
+  { to: ROUTES.admin_roles, label: 'Roles', permission: 'roles.update' },
+  { to: ROUTES.admin_users, label: 'Users', permission: 'users.update' },
 ];

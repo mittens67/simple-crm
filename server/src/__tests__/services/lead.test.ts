@@ -108,6 +108,15 @@ describe('LeadService.create', () => {
     expect(String(lead.assigned_rep_id)).toBe(String(rep._id));
   });
 
+  it('accepts an explicit null rep, which is what a cleared select sends', async () => {
+    // `.optional()` accepts undefined but not null, so this used to make
+    // creating an unassigned lead impossible from the UI.
+    const lead = await lead_service.create(as_rep(), valid_input({ assigned_rep_id: null }));
+
+    expect(lead.status).toBe('Open');
+    expect(lead.assigned_rep_id).toBeUndefined();
+  });
+
   it('rejects an assignment to a user that does not exist', async () => {
     await expect(
       lead_service.create(
@@ -188,6 +197,31 @@ describe('LeadService conversion', () => {
     expect(String(customer?.assigned_rep_id)).toBe(String(rep._id));
   });
 
+  it('converts an unassigned lead without resetting it to Open', async () => {
+    // The edit form sends assigned_rep_id on every save. Deriving status from
+    // assignment unconditionally meant an unassigned lead was forced back to
+    // Open, so the customer was created but the lead never showed as Converted.
+    const lead = await Lead.create(valid_input());
+
+    const converted = await lead_service.update(as_rep(), String(lead._id), {
+      status: 'Converted',
+      assigned_rep_id: null,
+    });
+
+    expect(converted.status).toBe('Converted');
+    expect(converted.customer_id).toBeDefined();
+  });
+
+  it('still derives status from assignment when no status is chosen', async () => {
+    const lead = await Lead.create(valid_input());
+
+    const assigned = await lead_service.update(as_rep(), String(lead._id), {
+      assigned_rep_id: String(rep._id),
+    });
+
+    expect(assigned.status).toBe('Pending');
+  });
+
   it('does not create a second customer when already converted', async () => {
     const lead = await Lead.create({ ...valid_input(), assigned_rep_id: rep._id });
 
@@ -213,18 +247,27 @@ describe('LeadService.list', () => {
     await Lead.create({ ...valid_input({ email: 'c@x.com' }) });
   });
 
-  it('shows a rep only the leads assigned to them', async () => {
+  it('shows a rep their own leads plus the unclaimed pool', async () => {
+    const page = await lead_service.list(as_rep(), {});
+    const emails = page.items.map((lead) => lead.email).sort();
+
+    // 'c@x.com' has no rep. Leads are an unclaimed pool by design — Open means
+    // unassigned — so a rep must be able to see it in order to claim it.
+    expect(emails).toEqual(['a@x.com', 'c@x.com']);
+    expect(page.total).toBe(2);
+  });
+
+  it("does not show a rep another rep's leads", async () => {
     const page = await lead_service.list(as_rep(), {});
 
-    expect(page.total).toBe(1);
-    expect(page.items[0].email).toBe('a@x.com');
+    expect(page.items.map((lead) => lead.email)).not.toContain('b@x.com');
   });
 
   it('shows a different rep a different set', async () => {
     const page = await lead_service.list(as_other_rep(), {});
+    const emails = page.items.map((lead) => lead.email).sort();
 
-    expect(page.total).toBe(1);
-    expect(page.items[0].email).toBe('b@x.com');
+    expect(emails).toEqual(['b@x.com', 'c@x.com']);
   });
 
   it('shows a manager every lead via the .all scope', async () => {
@@ -235,7 +278,7 @@ describe('LeadService.list', () => {
   it('reports a total consistent with the scope, not the raw collection', async () => {
     // Filtering after the fact would report 3 here and break pagination.
     const page = await lead_service.list(as_rep(), { limit: 10 });
-    expect(page.total).toBe(1);
+    expect(page.total).toBe(2);
     expect(page.has_more).toBe(false);
   });
 });

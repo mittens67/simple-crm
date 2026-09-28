@@ -90,6 +90,15 @@ describe('CustomerService.create', () => {
     ).rejects.toThrow(ValidationError);
   });
 
+  it('accepts an explicit null rep, which is what a cleared select sends', async () => {
+    const customer = await customer_service.create(
+      as_rep(),
+      valid_input({ assigned_rep_id: null })
+    );
+
+    expect(customer.assigned_rep_id).toBeUndefined();
+  });
+
   it('rejects an assigned rep that does not exist', async () => {
     await expect(
       customer_service.create(

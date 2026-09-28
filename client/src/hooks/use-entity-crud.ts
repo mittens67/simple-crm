@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useQuery, useMutation, type DocumentNode } from '@apollo/client';
+import { gql, useQuery, useMutation, type DocumentNode } from '@apollo/client';
 
 /**
  * One implementation of the list + create/update/delete cycle.
@@ -35,6 +35,22 @@ interface EntityCrudOptions {
 }
 
 export const DEFAULT_PAGE_SIZE = 20;
+
+/**
+ * Placeholder for read-only entities, which have no create/update/delete
+ * documents.
+ *
+ * Hooks cannot be called conditionally, so useMutation runs for every entity
+ * regardless. The previous fallback was the *list query*, and Apollo throws on
+ * mount when handed a query where a mutation is expected — which took out every
+ * page that mounts a read-only hook (useUsers appears on four of them). The
+ * placeholder is a valid mutation document that is never executed.
+ */
+const NOOP_MUTATION = gql`
+  mutation NoopMutation {
+    __typename
+  }
+`;
 
 /**
  * Apollo reports GraphQL errors in two shapes depending on whether the
@@ -83,13 +99,13 @@ export const useEntityCrud = <T, TInput>({
     };
   }, [data, list_field]);
 
-  const [create_mutation] = useMutation(documents.create ?? documents.list, {
+  const [create_mutation] = useMutation(documents.create ?? NOOP_MUTATION, {
     errorPolicy: 'all',
   });
-  const [update_mutation] = useMutation(documents.update ?? documents.list, {
+  const [update_mutation] = useMutation(documents.update ?? NOOP_MUTATION, {
     errorPolicy: 'all',
   });
-  const [remove_mutation] = useMutation(documents.remove ?? documents.list, {
+  const [remove_mutation] = useMutation(documents.remove ?? NOOP_MUTATION, {
     errorPolicy: 'all',
   });
 

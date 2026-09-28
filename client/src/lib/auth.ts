@@ -54,11 +54,34 @@ const REFRESH_MUTATION = `
 `;
 
 /**
+ * De-duplicates concurrent refreshes.
+ *
+ * Refresh tokens rotate, and presenting an already-rotated token is treated as
+ * theft — the server revokes every session for that user. Two refreshes firing
+ * at once therefore log the user out completely: the first rotates the cookie,
+ * and the second looks like a replay of it.
+ *
+ * That is easy to trigger: several queries can fail with UNAUTHENTICATED in the
+ * same tick, and each would otherwise call this independently. Callers now
+ * share one in-flight request.
+ */
+let in_flight: Promise<AuthUser | null> | null = null;
+
+/**
  * Exchanges the refresh cookie for a new access token. Uses raw fetch (not the
  * Apollo client) so the error link can call it without recursion. Returns the
  * user on success, null otherwise.
  */
 export const refresh_session = async (): Promise<AuthUser | null> => {
+  if (in_flight) return in_flight;
+
+  in_flight = perform_refresh().finally(() => {
+    in_flight = null;
+  });
+  return in_flight;
+};
+
+const perform_refresh = async (): Promise<AuthUser | null> => {
   try {
     const res = await fetch('/graphql', {
       method: 'POST',

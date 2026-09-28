@@ -17,7 +17,11 @@ export const create_lead_schema = z.object({
     .regex(email_regex, 'Email must be a valid email address'),
   phone: z.string().min(1, 'Phone is required').max(20, 'Phone must be 20 characters or less'),
   status: z.literal('Open').default('Open'),
-  assigned_rep_id: z.string().optional(),
+  // nullish, not optional: an unassigned lead arrives as an explicit null from
+  // a cleared <select>, and `.optional()` accepts only undefined — which made
+  // creating an unassigned lead impossible through the UI. The service already
+  // treats a falsy value as "no rep".
+  assigned_rep_id: z.string().nullish(),
   sales_notes: z.string()
     .max(2000, 'Sales notes must be 2000 characters or less')
     .transform(sanitize_text)

@@ -284,10 +284,10 @@ const Users = () => {
   ];
 
   // Route guards already gate this page; this is defence in depth.
-  if (!can('users.read')) {
+  if (!can('users.update')) {
     return (
       <ListPage title="Users">
-        <EmptyState title="Access denied" description="You do not have permission to view users." />
+        <EmptyState title="Access denied" description="Managing users requires the users.update permission." />
       </ListPage>
     );
   }

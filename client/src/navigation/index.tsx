@@ -118,7 +118,7 @@ const Navigation = () => (
           <Route
             path="admin/roles"
             element={
-              <PermissionProtectedRoute permission="roles.read">
+              <PermissionProtectedRoute permission="roles.update">
                 <Roles />
               </PermissionProtectedRoute>
             }
@@ -126,7 +126,7 @@ const Navigation = () => (
           <Route
             path="admin/users"
             element={
-              <PermissionProtectedRoute permission="users.read">
+              <PermissionProtectedRoute permission="users.update">
                 <Users />
               </PermissionProtectedRoute>
             }

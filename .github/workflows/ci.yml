@@ -102,12 +102,15 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongodb:
+        # A standalone, so transactions are unavailable here. core/transaction.ts
+        # degrades gracefully, and the unit suite runs against a single-node
+        # replica set where the rollback path is genuinely exercised.
         image: mongo:7
         options: >-
-          --health-cmd mongosh
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
         ports:
           - 27017:27017
     steps:
@@ -134,6 +137,8 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --dir client exec playwright install --with-deps chromium
 
+      # `pnpm seed` runs under ts-node, not ts-node-dev. ts-node-dev is a
+      # watcher that never exits, so this step used to hang indefinitely.
       - name: Seed database
         run: pnpm --dir server seed
         env:
@@ -142,6 +147,7 @@ jobs:
           ADMIN_PASSWORD: AdminTest123
           JWT_ACCESS_SECRET: test-secret
           JWT_REFRESH_SECRET: test-refresh-secret
+          DEMO_PASSWORD: ${{ env.DEMO_PASSWORD }}
 
       - name: Run E2E tests
         run: pnpm --dir client e2e
@@ -149,8 +155,14 @@ jobs:
           MONGO_URI: mongodb://localhost:27017/crm_test
           JWT_ACCESS_SECRET: test-secret
           JWT_REFRESH_SECRET: test-refresh-secret
+          DEMO_PASSWORD: ${{ env.DEMO_PASSWORD }}
           PORT: 4000
-          CLIENT_PORT: 5173
+          # The deterministic mock, so e2e needs no API key and no network.
+          AI_PROVIDER: mock
+          # The suite logs in repeatedly and the dashboard fires several
+          # aggregations per load; the defaults would throttle it.
+          RATE_LIMIT_MAX: '5000'
+          AUTH_RATE_LIMIT_MAX: '500'
 
       - name: Upload Playwright report
         if: failure()

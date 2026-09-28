@@ -222,10 +222,10 @@ const Roles = () => {
     },
   ];
 
-  if (!can('roles.read')) {
+  if (!can('roles.update')) {
     return (
       <ListPage title="Roles">
-        <EmptyState title="Access denied" description="You do not have permission to view roles." />
+        <EmptyState title="Access denied" description="Managing roles requires the roles.update permission." />
       </ListPage>
     );
   }
