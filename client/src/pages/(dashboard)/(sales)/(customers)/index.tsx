@@ -6,6 +6,7 @@ import { useResourcePage } from '../../../../hooks/use-resource-page';
 import type { Customer, CustomerInput } from '../../../../types/customer';
 import {
   Button,
+  CopyableText,
   DataTable,
   EmptyState,
   Pagination,
@@ -36,13 +37,13 @@ const Customers = () => {
       key: 'email',
       header: 'Email',
       sort_value: (customer) => customer.email,
-      render: (customer) => customer.email,
+      render: (customer) => <CopyableText value={customer.email} label="email address" truncate />,
     },
     {
       key: 'phone',
       header: 'Phone',
       hide_on_mobile: true,
-      render: (customer) => customer.phone,
+      render: (customer) => <CopyableText value={customer.phone} label="phone number" />,
     },
     {
       key: 'rep',

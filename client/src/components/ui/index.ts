@@ -13,6 +13,7 @@ export type { Column } from './data-table';
 
 export { default as Pagination } from './pagination';
 export { default as SearchInput } from './search-input';
+export { default as CopyableText } from './copyable-text';
 
 export {
   Badge,

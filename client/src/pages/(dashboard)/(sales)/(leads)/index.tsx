@@ -9,6 +9,7 @@ import type { Lead, LeadInput } from '../../../../types/lead';
 import {
   Badge,
   Button,
+  CopyableText,
   DataTable,
   EmptyState,
   Pagination,
@@ -54,13 +55,15 @@ const Leads = () => {
       header: 'Email',
       sort_value: (lead) => lead.email,
       hide_on_mobile: true,
-      render: (lead) => lead.email,
+      // Clipped with the full address on hover: an arbitrarily long email was
+      // taking the column width it wanted and squeezing Phone into a wrap.
+      render: (lead) => <CopyableText value={lead.email} label="email address" truncate />,
     },
     {
       key: 'phone',
       header: 'Phone',
       hide_on_mobile: true,
-      render: (lead) => lead.phone,
+      render: (lead) => <CopyableText value={lead.phone} label="phone number" />,
     },
     {
       key: 'score',
