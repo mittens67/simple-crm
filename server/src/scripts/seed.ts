@@ -100,18 +100,41 @@ const TEAM: TeamMember[] = [
   { email: 'ana.moreau@example.com', name: 'Ana Moreau', role: 'Support' },
 ];
 
+/**
+ * Creates the demo account, or brings an existing one back in line with this
+ * file.
+ *
+ * It used to skip existing users entirely, which meant a demo account created
+ * by an older seed kept its old password forever: changing DEMO_PASSWORD and
+ * re-seeding appeared to work and changed nothing. That is exactly how
+ * demo-sales and demo-support ended up on a different password from
+ * demo-manager, which was added later.
+ *
+ * Only the fixed TEAM addresses below go through here, so this resets demo
+ * credentials and never touches a real account.
+ */
 const upsert_user = async (member: TeamMember, password: string): Promise<Types.ObjectId> => {
+  const role = await Role.findOne({ name: member.role });
+  if (!role) {
+    throw new Error(`Role "${member.role}" not found — cannot seed ${member.email}`);
+  }
+
   const existing = await User.findOne({ email: member.email });
   if (existing) {
-    console.log(`User ${member.email} already exists — skipping`);
+    existing.name = member.name;
+    existing.password = await bcrypt.hash(password, 10);
+    existing.role_ids = [role._id] as Types.ObjectId[];
+    existing.is_active = true;
+    await existing.save();
+    console.log(`Updated ${member.role} user ${member.email} (password reset)`);
     return existing._id as Types.ObjectId;
   }
-  const role = await Role.findOne({ name: member.role });
+
   const created = await User.create({
     name: member.name,
     email: member.email,
     password: await bcrypt.hash(password, 10),
-    role_ids: [role!._id],
+    role_ids: [role._id],
     is_active: true,
   });
   console.log(`Created ${member.role} user ${member.email}`);

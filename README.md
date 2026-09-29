@@ -257,13 +257,14 @@ Free tiers have low per-minute ceilings, so: a hard timeout via a real `AbortCon
 
 | Suite | Count | Runs against |
 |---|---|---|
-| Server | 357 tests / 23 files | `mongodb-memory-server` single-node replica set, one shared instance, a database per file |
+| Server | 411 tests / 24 files | `mongodb-memory-server` single-node replica set, one shared instance, a database per file |
 | Client | 35 tests / 7 files | Vitest + Testing Library |
 | E2E | 20 specs | Playwright against a throwaway in-memory replica set (`pnpm e2e:local`) |
 
 Worth calling out:
 
 - **Schema tests** build the real executable schema, assert every resolver module is actually reachable, and cross-check each GraphQL enum against its Mongoose enum. The original code had a whole resolver module that was never merged into the typedefs — 301 lines of passing tests covering an API no client could reach.
+- **Every client document is validated against the server schema** ([`client-documents.test.ts`](server/src/__tests__/client-documents.test.ts)). It extracts all 49 `gql` operations from the client, resolves the fragment interpolation, and validates each one. This is the gap that shipped the original broken Deals and Support pages: the client's types agreed with the client's pages and only disagreed with the server, inside template strings `tsc` never reads.
 - **N+1 is measured** by counting driver `commandStarted` events, not asserted in prose.
 - **Token rotation and reuse detection** are covered directly: rotation, replay revoking every session for the compromised user *and only that user*, HMAC-only storage, cookie flags, expiry.
 - **The e2e run found bugs no unit test could** — four of five list pages threw on mount in a real browser because a read-only entity's hook passed a *query* where Apollo expected a mutation, and the admin console was gated on `users.read` (which every rep holds so assignment dropdowns can show names) instead of `users.update`.
@@ -309,7 +310,7 @@ Stated plainly rather than papered over:
 
 - **Soft delete is not universal.** Leads archive; customers, deals, tickets and notes are hard-deleted through the repository.
 - **`SupportNote` has an API and no UI.** The resolvers and tests exist; nothing renders them.
-- **No GraphQL codegen.** Client types are hand-written. This is the gap that let the original client and server drift apart across untyped `gql` strings — `tsc` could not see it, because the client's types agreed with the client's pages and only disagreed with the server. The e2e suite covers the hole today; codegen would close it.
+- **No GraphQL codegen.** Client types are hand-written, so a query's *result* is still typed by hand and can be wrong. The query documents themselves are now validated against the live schema by `client-documents.test.ts`, which closes the half of this gap that actually shipped a bug; codegen would close the other half.
 - **No bulk actions, import/export, saved views or notifications.**
 - **Pipeline movement is by explicit controls, not drag-and-drop.** The data model is what makes the board work; drag is polish.
 

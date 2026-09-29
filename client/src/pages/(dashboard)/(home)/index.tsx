@@ -22,6 +22,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { DASHBOARD_QUERY } from '../../../lib/graphql-queries';
+import { useAuth } from '../../../auth/auth-context';
 import { useVizColors } from '../../../hooks/use-viz-colors';
 import { Card, CardHeader, EmptyState, PageHeader, StatTile } from '../../../components/ui';
 import LoadingSpinner from '../../../components/ui/loading-spinner';
@@ -36,14 +37,19 @@ import './home.scss';
  * integers.
  */
 
+/**
+ * Null means "not permitted to see this", not zero. A support agent has no
+ * deal figures; a sales rep has no ticket figure. Tiles are built from the
+ * values that came back rather than from a fixed list.
+ */
 interface DashboardSummary {
-  total_leads: number;
-  total_customers: number;
-  open_deals: number;
-  open_deal_value: number;
-  weighted_pipeline_value: number;
-  won_value_this_month: number;
-  open_tickets: number;
+  total_leads: number | null;
+  total_customers: number | null;
+  open_deals: number | null;
+  open_deal_value: number | null;
+  weighted_pipeline_value: number | null;
+  won_value_this_month: number | null;
+  open_tickets: number | null;
   overdue_tasks: number;
 }
 
@@ -116,7 +122,17 @@ const ChartTooltip = ({
 };
 
 const Home = () => {
-  const { data, loading, error } = useQuery(DASHBOARD_QUERY, { variables: { months: 12 } });
+  const { can } = useAuth();
+  // Sections are requested only where the caller may read them. Asking for all
+  // six and letting the refused ones throw failed the whole query, so a single
+  // missing permission blanked the entire dashboard.
+  const can_leads = can('leads.read');
+  const can_deals = can('deals.read');
+  const can_tickets = can('support_tickets.read');
+
+  const { data, loading, error } = useQuery(DASHBOARD_QUERY, {
+    variables: { months: 12, can_leads, can_deals, can_tickets },
+  });
   // Resolved rather than passed as var(): Recharts writes these as SVG
   // attributes, where var() is not reliably supported.
   const viz = useVizColors();
@@ -151,46 +167,52 @@ const Home = () => {
     );
   }
 
+  // A tile appears only when its figure came back. Null is "not permitted",
+  // and a confident 0 for a number you may not see is worse than no tile.
   const tiles = [
-    {
+    summary.open_deal_value !== null && {
       label: 'Open pipeline',
-      value: money(summary.open_deal_value ?? 0),
+      value: money(summary.open_deal_value),
       hint: `${summary.open_deals ?? 0} open deals`,
       icon: <TrendingUp />,
       tone: 'info' as const,
     },
-    {
+    summary.weighted_pipeline_value !== null && {
       label: 'Weighted pipeline',
-      value: money(summary.weighted_pipeline_value ?? 0),
+      value: money(summary.weighted_pipeline_value),
       hint: 'Scaled by stage probability',
       icon: <Scale />,
       tone: 'brand' as const,
     },
-    {
+    summary.won_value_this_month !== null && {
       label: 'Won this month',
-      value: money(summary.won_value_this_month ?? 0),
+      value: money(summary.won_value_this_month),
       hint: 'Closed-won value',
       icon: <Trophy />,
       tone: 'success' as const,
     },
-    {
+    summary.total_leads !== null && {
       label: 'Leads',
-      value: summary.total_leads ?? 0,
+      value: summary.total_leads,
       hint: 'Excluding archived',
       icon: <UserRound />,
       tone: 'neutral' as const,
     },
-    {
+    summary.total_customers !== null && {
       label: 'Customers',
-      value: summary.total_customers ?? 0,
+      value: summary.total_customers,
       hint: 'Active accounts',
       icon: <Building2 />,
       tone: 'neutral' as const,
     },
-    {
+    summary.open_tickets !== null && {
       label: 'Open tickets',
-      value: summary.open_tickets ?? 0,
-      hint: `${Math.round(sla.compliance_rate ?? 100)}% within SLA`,
+      value: summary.open_tickets,
+      // The SLA figure rides along only when that section was requested.
+      hint:
+        sla.compliance_rate === undefined
+          ? 'Open and in progress'
+          : `${Math.round(sla.compliance_rate)}% within SLA`,
       icon: <Ticket />,
       tone: (sla.compliance_rate ?? 100) < 80 ? ('danger' as const) : ('neutral' as const),
     },
@@ -201,7 +223,7 @@ const Home = () => {
       icon: <AlarmClock />,
       tone: (summary.overdue_tasks ?? 0) > 0 ? ('warning' as const) : ('neutral' as const),
     },
-  ];
+  ].filter((tile): tile is Exclude<typeof tile, false> => tile !== false);
 
   return (
     <div className="home">
@@ -217,8 +239,9 @@ const Home = () => {
       </div>
 
       <div className="home-grid">
-        <Card as="section" className="home-chart">
-          <CardHeader title="Closed-won revenue" />
+        {can_deals && (
+          <Card as="section" className="home-chart">
+            <CardHeader title="Closed-won revenue" />
           {revenue_data.length === 0 ? (
             <EmptyState title="No closed-won deals yet" />
           ) : (
@@ -272,11 +295,13 @@ const Home = () => {
               </ResponsiveContainer>
               <p className="home-chart-note">Last 12 months, by the month each deal closed.</p>
             </>
-          )}
-        </Card>
+            )}
+          </Card>
+        )}
 
-        <Card as="section" className="home-chart">
-          <CardHeader title="Pipeline by stage" />
+        {can_deals && (
+          <Card as="section" className="home-chart">
+            <CardHeader title="Pipeline by stage" />
           {funnel_data.length === 0 ? (
             <EmptyState title="No pipeline configured" />
           ) : (
@@ -324,11 +349,13 @@ const Home = () => {
               </ResponsiveContainer>
               <p className="home-chart-note">Open deals only. Hover for value and time in stage.</p>
             </>
-          )}
-        </Card>
+            )}
+          </Card>
+        )}
 
-        <Card as="section" className="home-chart">
-          <CardHeader title="Leads by status" />
+        {can_leads && (
+          <Card as="section" className="home-chart">
+            <CardHeader title="Leads by status" />
           {lead_funnel.length === 0 ? (
             <EmptyState title="No leads yet" />
           ) : (
@@ -356,11 +383,13 @@ const Home = () => {
                 <Bar dataKey="count" fill={viz["series-2"]} radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
             </ResponsiveContainer>
-          )}
-        </Card>
+            )}
+          </Card>
+        )}
 
-        <Card as="section" className="home-chart">
-          <CardHeader title="Rep performance" />
+        {can_deals && (
+          <Card as="section" className="home-chart">
+            <CardHeader title="Rep performance" />
           {reps.length === 0 ? (
             <EmptyState title="No deals yet" />
           ) : (
@@ -393,8 +422,46 @@ const Home = () => {
                 </tbody>
               </table>
             </div>
-          )}
-        </Card>
+            )}
+          </Card>
+        )}
+
+        {can_tickets && (
+          <Card as="section" className="home-chart">
+            <CardHeader title="Support SLA" />
+            {sla.total === 0 ? (
+              <EmptyState title="No tickets yet" />
+            ) : (
+              <div className="home-table-wrap">
+                <table className="home-table">
+                  <tbody>
+                    <tr>
+                      <td>Tickets</td>
+                      <td>{sla.total}</td>
+                    </tr>
+                    <tr>
+                      <td>Answered within SLA</td>
+                      <td>{Math.round(sla.compliance_rate)}%</td>
+                    </tr>
+                    <tr>
+                      <td>Breached</td>
+                      <td>{sla.breached}</td>
+                    </tr>
+                    <tr>
+                      <td>Average first response</td>
+                      {/* Null, not 0h: nothing answered yet has no average. */}
+                      <td>
+                        {sla.avg_first_response_hours === null
+                          ? '—'
+                          : `${sla.avg_first_response_hours.toFixed(1)}h`}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );

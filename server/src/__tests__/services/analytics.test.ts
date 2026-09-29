@@ -11,7 +11,7 @@ import Role from '../../models/role';
 import type { IUser } from '../../models/user';
 import type { IRole } from '../../models/role';
 import type { ICustomer } from '../../models/customer';
-import { mock_context } from '../helpers/context';
+import { mock_context, mock_context_with } from '../helpers/context';
 import { create_test_pipeline, stage_named, won_stage, lost_stage } from '../helpers/pipeline';
 
 let rep: IUser;
@@ -355,5 +355,60 @@ describe('slaSummary', () => {
 
     const summary = await analytics_service.sla_summary(as_manager());
     expect(summary.breached).toBe(1);
+  });
+});
+
+/**
+ * The dashboard spans four resources and no real role holds all of them.
+ *
+ * Every test above runs as a user with leads + customers + deals + tickets, so
+ * the partial cases were invisible: the summary was gated on `leads.read`
+ * alone, which denied a support agent the whole dashboard — including their
+ * own ticket count — while handing a sales rep a ticket figure they have no
+ * permission to read.
+ */
+describe('dashboard summary under partial permissions', () => {
+  it('gives a support agent their tickets and withholds the sales figures', async () => {
+    const summary = await analytics_service.dashboard_summary(
+      mock_context_with(rep, { 'support_tickets.read': true, 'support_tickets.read.all': true })
+    );
+
+    expect(summary.open_tickets).not.toBeNull();
+    // Null, not 0: "you may not see this" is not "there are none".
+    expect(summary.total_leads).toBeNull();
+    expect(summary.total_customers).toBeNull();
+    expect(summary.open_deals).toBeNull();
+    expect(summary.open_deal_value).toBeNull();
+    expect(summary.weighted_pipeline_value).toBeNull();
+    expect(summary.won_value_this_month).toBeNull();
+  });
+
+  it('gives a sales rep their pipeline and withholds the ticket count', async () => {
+    const summary = await analytics_service.dashboard_summary(
+      mock_context_with(rep, {
+        'leads.read': true,
+        'customers.read': true,
+        'deals.read': true,
+      })
+    );
+
+    expect(summary.total_leads).not.toBeNull();
+    expect(summary.total_customers).not.toBeNull();
+    expect(summary.open_deals).not.toBeNull();
+    expect(summary.open_tickets).toBeNull();
+  });
+
+  it('always reports the caller own overdue tasks, which need no resource permission', async () => {
+    const summary = await analytics_service.dashboard_summary(
+      mock_context_with(rep, { 'support_tickets.read': true })
+    );
+
+    expect(typeof summary.overdue_tasks).toBe('number');
+  });
+
+  it('refuses a caller holding none of the four reporting resources', async () => {
+    await expect(
+      analytics_service.dashboard_summary(mock_context_with(rep, { 'users.read': true }))
+    ).rejects.toThrow(/Missing permission/);
   });
 });

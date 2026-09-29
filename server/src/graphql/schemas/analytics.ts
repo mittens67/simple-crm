@@ -45,14 +45,21 @@ export default gql`
     avg_first_response_hours: Float
   }
 
+  """
+  Headline figures. Every field is nullable and null means "not permitted to
+  see this", not zero — the summary spans leads, customers, deals and tickets,
+  and a role rarely holds all four. The UI renders a tile only when its value
+  came back.
+  """
   type DashboardSummary {
-    total_leads: Int!
-    total_customers: Int!
-    open_deals: Int!
-    open_deal_value: Float!
-    weighted_pipeline_value: Float!
-    won_value_this_month: Float!
-    open_tickets: Int!
+    total_leads: Int
+    total_customers: Int
+    open_deals: Int
+    open_deal_value: Float
+    weighted_pipeline_value: Float
+    won_value_this_month: Float
+    open_tickets: Int
+    "The caller's own overdue tasks. Needs no resource permission."
     overdue_tasks: Int!
   }
 

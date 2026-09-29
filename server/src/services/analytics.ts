@@ -6,7 +6,8 @@ import Activity from '../models/activity';
 import SupportTicket from '../models/support-ticket';
 import Pipeline from '../models/pipeline';
 import { ApolloContext } from '../graphql/context';
-import { require_permission } from '../auth/authorize';
+import { can, require_auth, require_permission } from '../auth/authorize';
+import { ForbiddenError } from '../utils/errors';
 import { scope_filter_for } from '../core/scoping';
 import { pipeline_service } from './pipeline';
 
@@ -25,14 +26,24 @@ import { pipeline_service } from './pipeline';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+/**
+ * Every figure is nullable, and null means "you are not allowed to see this"
+ * rather than "zero".
+ *
+ * The summary spans four resources, so gating the whole thing on one
+ * permission was wrong in both directions: a support agent has no `leads.read`
+ * and so got no dashboard at all — not even their own ticket count — while a
+ * sales rep was handed a ticket figure they have no permission to read. The UI
+ * renders a tile only when its value came back.
+ */
 export interface DashboardSummary {
-  total_leads: number;
-  total_customers: number;
-  open_deals: number;
-  open_deal_value: number;
-  weighted_pipeline_value: number;
-  won_value_this_month: number;
-  open_tickets: number;
+  total_leads: number | null;
+  total_customers: number | null;
+  open_deals: number | null;
+  open_deal_value: number | null;
+  weighted_pipeline_value: number | null;
+  won_value_this_month: number | null;
+  open_tickets: number | null;
   overdue_tasks: number;
 }
 
@@ -42,49 +53,73 @@ export class AnalyticsService {
   }
 
   async dashboard_summary(context: ApolloContext): Promise<DashboardSummary> {
-    require_permission(context, 'leads.read');
+    const actor = require_auth(context);
 
-    const lead_scope = scope_filter_for(context, 'leads', 'assigned_rep_id');
-    const customer_scope = scope_filter_for(context, 'customers', 'assigned_rep_id');
-    const ticket_scope = scope_filter_for(context, 'support_tickets', 'assigned_agent');
-    const deal_scope = this.deal_scope(context);
+    const can_leads = can(context, 'leads.read');
+    const can_customers = can(context, 'customers.read');
+    const can_deals = can(context, 'deals.read');
+    const can_tickets = can(context, 'support_tickets.read');
+
+    // Someone with none of the reporting resources has no business on this
+    // screen at all — that is a real authorization failure, not an empty one.
+    if (!can_leads && !can_customers && !can_deals && !can_tickets) {
+      throw new ForbiddenError('Missing permission: leads.read');
+    }
 
     const start_of_month = new Date();
     start_of_month.setDate(1);
     start_of_month.setHours(0, 0, 0, 0);
 
+    const deal_scope = this.deal_scope(context);
+
     const [total_leads, total_customers, open_agg, won_agg, open_tickets, overdue_tasks, weighted] =
       await Promise.all([
-        Lead.countDocuments({ ...lead_scope, status: { $ne: 'Archived' } } as FilterQuery<unknown>),
-        Customer.countDocuments(customer_scope as FilterQuery<unknown>),
-        Deal.aggregate([
-          { $match: { ...deal_scope, status: { $in: ['Open', 'Pending'] } } },
-          { $group: { _id: null, count: { $sum: 1 }, value: { $sum: '$value' } } },
-        ]),
-        Deal.aggregate([
-          { $match: { ...deal_scope, status: 'Won', closed_at: { $gte: start_of_month } } },
-          { $group: { _id: null, value: { $sum: '$value' } } },
-        ]),
-        SupportTicket.countDocuments({
-          ...ticket_scope,
-          status: { $in: ['Open', 'InProgress'] },
-        } as FilterQuery<unknown>),
+        can_leads
+          ? Lead.countDocuments({
+              ...scope_filter_for(context, 'leads', 'assigned_rep_id'),
+              status: { $ne: 'Archived' },
+            } as FilterQuery<unknown>)
+          : null,
+        can_customers
+          ? Customer.countDocuments(
+              scope_filter_for(context, 'customers', 'assigned_rep_id') as FilterQuery<unknown>
+            )
+          : null,
+        can_deals
+          ? Deal.aggregate([
+              { $match: { ...deal_scope, status: { $in: ['Open', 'Pending'] } } },
+              { $group: { _id: null, count: { $sum: 1 }, value: { $sum: '$value' } } },
+            ])
+          : null,
+        can_deals
+          ? Deal.aggregate([
+              { $match: { ...deal_scope, status: 'Won', closed_at: { $gte: start_of_month } } },
+              { $group: { _id: null, value: { $sum: '$value' } } },
+            ])
+          : null,
+        can_tickets
+          ? SupportTicket.countDocuments({
+              ...scope_filter_for(context, 'support_tickets', 'assigned_agent'),
+              status: { $in: ['Open', 'InProgress'] },
+            } as FilterQuery<unknown>)
+          : null,
+        // Tasks are the caller's own, so this needs no resource permission.
         Activity.countDocuments({
           type: 'Task',
-          owner_id: context.user?._id,
+          owner_id: actor._id,
           completed_at: null,
           due_at: { $lt: new Date() },
         } as FilterQuery<unknown>),
-        this.weighted_pipeline_value(context),
+        can_deals ? this.weighted_pipeline_value(context) : null,
       ]);
 
     return {
       total_leads,
       total_customers,
-      open_deals: open_agg[0]?.count ?? 0,
-      open_deal_value: open_agg[0]?.value ?? 0,
+      open_deals: can_deals ? (open_agg?.[0]?.count ?? 0) : null,
+      open_deal_value: can_deals ? (open_agg?.[0]?.value ?? 0) : null,
       weighted_pipeline_value: weighted,
-      won_value_this_month: won_agg[0]?.value ?? 0,
+      won_value_this_month: can_deals ? (won_agg?.[0]?.value ?? 0) : null,
       open_tickets,
       overdue_tasks,
     };

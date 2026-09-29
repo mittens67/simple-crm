@@ -448,8 +448,28 @@ export const DELETE_ACTIVITY_MUTATION = gql`
 
 // --- Analytics -------------------------------------------------------------
 
+/**
+ * The dashboard spans four resources and no role holds all of them, so each
+ * section is requested only when the caller's permissions allow it.
+ *
+ * Asking for everything and letting the unauthorized fields throw is what the
+ * first version did: one `Missing permission` error failed the whole query, so
+ * a support agent saw "Could not load reporting data" instead of their own
+ * tickets, and a sales rep saw the same because of the SLA panel. `@include`
+ * keeps this to one document and one round trip while never requesting a field
+ * the server would refuse.
+ *
+ * `dashboardSummary` is always requested: its own fields come back null where
+ * they are not permitted, and it carries the caller's overdue task count,
+ * which needs no resource permission.
+ */
 export const DASHBOARD_QUERY = gql`
-  query GetDashboard($months: Int) {
+  query GetDashboard(
+    $months: Int
+    $can_leads: Boolean!
+    $can_deals: Boolean!
+    $can_tickets: Boolean!
+  ) {
     dashboardSummary {
       total_leads
       total_customers
@@ -460,7 +480,7 @@ export const DASHBOARD_QUERY = gql`
       open_tickets
       overdue_tasks
     }
-    pipelineFunnel {
+    pipelineFunnel @include(if: $can_deals) {
       stage_id
       stage_name
       display_order
@@ -470,16 +490,16 @@ export const DASHBOARD_QUERY = gql`
       weighted_value
       avg_days_in_stage
     }
-    revenueOverTime(months: $months) {
+    revenueOverTime(months: $months) @include(if: $can_deals) {
       period
       count
       value
     }
-    leadFunnel {
+    leadFunnel @include(if: $can_leads) {
       status
       count
     }
-    repPerformance {
+    repPerformance @include(if: $can_deals) {
       user_id
       name
       open_deals
@@ -488,7 +508,7 @@ export const DASHBOARD_QUERY = gql`
       won_value
       win_rate
     }
-    slaSummary {
+    slaSummary @include(if: $can_tickets) {
       total
       breached
       compliance_rate
