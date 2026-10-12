@@ -1,3 +1,4 @@
+import Button from './button';
 import './pagination.scss';
 
 interface PaginationProps {
@@ -21,28 +22,18 @@ const Pagination = ({ offset, limit, total, on_previous, on_next }: PaginationPr
 
   return (
     <nav className="pagination" aria-label="Pagination">
-      <button
-        type="button"
-        className="btn-secondary"
-        onClick={on_previous}
-        disabled={offset === 0}
-      >
+      <Button size="sm" onClick={on_previous} disabled={offset === 0}>
         ← Previous
-      </button>
+      </Button>
 
       <span className="pagination-status" aria-live="polite">
         {total === 0 ? 'No results' : `${first}–${last} of ${total}`}
         {total > 0 && ` · Page ${current_page} of ${page_count}`}
       </span>
 
-      <button
-        type="button"
-        className="btn-secondary"
-        onClick={on_next}
-        disabled={offset + limit >= total}
-      >
+      <Button size="sm" onClick={on_next} disabled={offset + limit >= total}>
         Next →
-      </button>
+      </Button>
     </nav>
   );
 };

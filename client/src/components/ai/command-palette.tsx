@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLazyQuery, useQuery } from '@apollo/client';
 import { useNavigate } from 'react-router-dom';
 import { AI_SEARCH_QUERY, AI_STATUS_QUERY } from '../../lib/graphql-queries';
+import Button from '../ui/button';
 import './command-palette.scss';
 
 /**
@@ -165,9 +166,10 @@ const CommandPalette = () => {
             placeholder="Ask in plain English — e.g. deals over 50k closing this quarter"
             aria-label="Search question"
           />
-          <button type="submit" className="btn-primary" disabled={loading || !question.trim()}>
+          {/* Button defaults to type="button"; this one has to submit the form. */}
+          <Button type="submit" variant="primary" disabled={loading || !question.trim()}>
             {loading ? 'Thinking…' : 'Search'}
-          </button>
+          </Button>
         </form>
 
         {!is_live && (
@@ -229,9 +231,9 @@ const CommandPalette = () => {
                 {result.total} match{result.total === 1 ? '' : 'es'}
                 {result.has_more && ' (showing the first 10)'}
               </span>
-              <button type="button" className="btn-small" onClick={() => go_to(result.plan.entity)}>
+              <Button size="sm" onClick={() => go_to(result.plan.entity)}>
                 Open {result.plan.entity.replace('_', ' ')}
-              </button>
+              </Button>
             </div>
           </div>
         )}

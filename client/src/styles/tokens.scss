@@ -237,7 +237,9 @@
 
   --text-primary: #eef1f6;
   --text-secondary: #a3adbf;
-  --text-tertiary: #6f7b90;
+  // Was #6f7b90, which is 4.1:1 on the page and 3.3:1 on a raised surface -
+  // under the 4.5:1 that small text needs. Still clearly dimmer than secondary.
+  --text-tertiary: #8793a8;
   --text-inverse: #0f172a;
 
   --border-color: #2c3442;
@@ -281,7 +283,9 @@
   // Brighter brand and accents: the light-theme values do not carry enough
   // contrast against a dark surface.
   --brand-500: #818cf8;
-  --brand-600: #6366f1;
+  // Hover goes lighter, not darker: the button label is dark in this theme, so
+  // darkening the fill dropped it to 4.0:1. This is 9:1.
+  --brand-600: #a5b4fc;
   --brand-700: #4f46e5;
   --brand-contrast: #0f172a;
 
