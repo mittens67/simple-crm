@@ -79,6 +79,8 @@ VITE_API_URL=https://your-api-host
 
 Logging in as Sales and then as Sales Manager is the fastest way to see row-level scoping working — the same dashboard shows different totals.
 
+The login page lists these accounts and the password. In development it reads the seed's default; a production build shows the card only when `VITE_DEMO_PASSWORD` is set.
+
 ### Useful commands
 
 | Command | Where | Does |

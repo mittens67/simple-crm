@@ -110,6 +110,9 @@ Add New → Project → import the repo.
 
 ```
 VITE_API_URL=https://crm-api.onrender.com
+
+# Optional: show the demo-accounts card on the login page
+VITE_DEMO_PASSWORD=<same value as the server's DEMO_PASSWORD>
 ```
 
 No trailing slash and no `/graphql` — the client appends that itself ([`client/src/lib/apollo.ts`](client/src/lib/apollo.ts)). In dev it ignores this entirely and proxies `/graphql` through Vite.
@@ -171,7 +174,7 @@ The repo ships neither, on purpose: `sameSite` is hardcoded to `lax` with no env
 
 ## Verification checklist
 
-- [ ] The Vercel URL loads the login page.
+- [ ] The Vercel URL loads the login page. The demo-accounts card appears only if you set `VITE_DEMO_PASSWORD`; without it a production build hides the card on purpose.
 - [ ] Log in as `demo-sales@example.com` with your `DEMO_PASSWORD`.
 - [ ] The dashboard renders with real numbers — this proves the aggregations, not just the API, are working.
 - [ ] **Refresh the page.** The session must persist. If it does not, re-read [Cross-site cookies](#cross-site-cookies).
