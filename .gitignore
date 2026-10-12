@@ -15,3 +15,7 @@ client/.env
 # Build output
 client/build/
 server/dist/
+
+# Playwright artefacts
+client/playwright-report/
+client/test-results/

@@ -1,0 +1,11 @@
+.tasks-body {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  // Long task notes should not stretch a table cell indefinitely.
+  max-width: 48rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

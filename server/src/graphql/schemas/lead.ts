@@ -22,9 +22,13 @@ export default gql`
         updated_at: String
     }
 
-    type LeadsResult {
-        data: [Lead!]!
+    """
+    Every paginated list in the schema uses this shape: items/total/has_more.
+    """
+    type LeadPage {
+        items: [Lead!]!
         total: Int!
+        has_more: Boolean!
     }
 
     input CreateLead {
@@ -53,7 +57,7 @@ export default gql`
     }
 
     type Query {
-        leads(search: String, limit: Int, offset: Int): LeadsResult!
+        leads(search: String, limit: Int, offset: Int): LeadPage!
         lead(id: ID!): Lead
     }
 `;

@@ -1,0 +1,360 @@
+// =============================================================================
+// Design tokens
+// =============================================================================
+//
+// One source of truth. This file replaces theme-variables.scss, which declared
+// the same ~50 custom properties three times over — a light block, a dark
+// block, and a bare `:root` block byte-identical to the light one — so every
+// token change had to be made in two or three places.
+//
+// The structure here is: `:root` holds the light theme plus everything that is
+// theme-invariant (scales, accents), and the dark block overrides only what
+// genuinely differs. Verified before consolidating that the light and bare
+// `:root` blocks were identical, so no visual change comes from the merge.
+//
+// What did not exist before at all: spacing, radius, typography, shadow,
+// z-index and motion scales. Those were magic numbers scattered across fifteen
+// stylesheets (`border-radius: 8px|12px|16px|20px`, `z-index: 1000`).
+
+:root {
+  // ---------------------------------------------------------------------------
+  // Spacing — a 4px base, so every gap is a multiple of the same unit.
+  // Note html { font-size: 62.5% }, hence 1rem = 10px.
+  // ---------------------------------------------------------------------------
+  --space-0: 0;
+  --space-1: 0.4rem; // 4px
+  --space-2: 0.8rem; // 8px
+  --space-3: 1.2rem; // 12px
+  --space-4: 1.6rem; // 16px
+  --space-5: 2.4rem; // 24px
+  --space-6: 3.2rem; // 32px
+  --space-7: 4.8rem; // 48px
+  --space-8: 6.4rem; // 64px
+
+  // ---------------------------------------------------------------------------
+  // Radius
+  // ---------------------------------------------------------------------------
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  // ---------------------------------------------------------------------------
+  // Typography — a modest ratio, because a CRM is dense and needs legibility
+  // more than drama.
+  // ---------------------------------------------------------------------------
+  --font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  --text-xs: 1.1rem;
+  --text-sm: 1.2rem;
+  --text-base: 1.4rem;
+  --text-md: 1.6rem;
+  --text-lg: 2rem;
+  --text-xl: 2.4rem;
+  --text-2xl: 3.2rem;
+  --text-3xl: 4rem;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --tracking-wide: 0.05em;
+
+  // ---------------------------------------------------------------------------
+  // Elevation — tuned for a light surface; the dark block replaces these with
+  // stronger shadows, since soft shadows vanish on dark backgrounds.
+  // ---------------------------------------------------------------------------
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 24px 56px rgba(15, 23, 42, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.35);
+
+  // ---------------------------------------------------------------------------
+  // Layering — named, so "which of these z-index: 1000 wins?" stops being a
+  // question anyone has to answer by reading every stylesheet.
+  // ---------------------------------------------------------------------------
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-sidebar: 200;
+  --z-dropdown: 300;
+  --z-modal-backdrop: 1000;
+  --z-modal: 1010;
+  --z-palette: 1100;
+  --z-toast: 1200;
+
+  // ---------------------------------------------------------------------------
+  // Motion
+  // ---------------------------------------------------------------------------
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  // Retained because existing stylesheets reference it.
+  --transition-speed: var(--duration-base);
+
+  // ---------------------------------------------------------------------------
+  // Brand
+  // ---------------------------------------------------------------------------
+  --brand-500: #4f46e5;
+  --brand-600: #4338ca;
+  --brand-700: #3730a3;
+  --brand-contrast: #ffffff;
+
+  // ---------------------------------------------------------------------------
+  // Semantic accents — identical in both themes on purpose.
+  // ---------------------------------------------------------------------------
+  --accent-success: #16a34a;
+  --accent-success-hover: #15803d;
+  --accent-warning: #d97706;
+  --accent-error: #dc2626;
+  --accent-error-hover: #b91c1c;
+  --accent-info: #2563eb;
+  --accent-info-hover: #1d4ed8;
+
+  // ---------------------------------------------------------------------------
+  // Surfaces and text — light theme
+  // ---------------------------------------------------------------------------
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f7f9;
+  --bg-tertiary: #eef0f3;
+  --bg-canvas: #f6f7f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #55617a;
+  --text-tertiary: #8b95a9;
+  --text-inverse: #ffffff;
+
+  --border-color: #e2e6ec;
+  --border-color-light: #eff1f5;
+  --border-color-strong: #cbd2dd;
+
+  --glass-bg: rgba(15, 23, 42, 0.03);
+  --glass-bg-hover: rgba(15, 23, 42, 0.06);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-border-hover: rgba(15, 23, 42, 0.12);
+
+  --input-bg: #ffffff;
+  --input-border: #cbd2dd;
+  --input-focus-border: var(--brand-500);
+  --input-text: #0f172a;
+  --input-placeholder: #8b95a9;
+  --input-disabled-bg: #f1f3f6;
+
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #0f172a;
+  --sidebar-text-secondary: #55617a;
+  --sidebar-border: #e2e6ec;
+  --sidebar-nav-hover: rgba(15, 23, 42, 0.04);
+  --sidebar-nav-active: rgba(79, 70, 229, 0.1);
+
+  --modal-bg: #ffffff;
+  --modal-border: #e2e6ec;
+  --modal-overlay: rgba(15, 23, 42, 0.45);
+
+  --table-bg: #ffffff;
+  --table-border: #e2e6ec;
+  --table-header-bg: #f6f7f9;
+  --table-row-hover: #f6f7f9;
+
+  --permission-badge-bg: #eef2ff;
+  --permission-badge-border: #c7d2fe;
+  --permission-badge-text: #3730a3;
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #cbd2dd;
+  --scrollbar-thumb-hover: #8b95a9;
+
+  // ---------------------------------------------------------------------------
+  // Data visualisation.
+  //
+  // Selected for the chart surface, not derived from the brand hue, and
+  // validated rather than eyeballed: all four slots pass the lightness band,
+  // chroma floor, CVD separation and normal-vision separation checks against
+  // this surface. Light mode warns on contrast below 3:1, which is why every
+  // chart carries direct labels or an axis rather than relying on fill alone.
+  // ---------------------------------------------------------------------------
+  --viz-surface: var(--bg-primary);
+  --viz-grid: #eff1f5;
+  --viz-axis: #8b95a9;
+  --series-1: #2a78d6;
+  --series-2: #1baf7a;
+  --series-3: #eda100;
+  --series-4: #e87ba4;
+
+  // ---------------------------------------------------------------------------
+  // Status colours.
+  //
+  // These now cover every value the enums actually produce. Previously the
+  // stylesheet styled `.status-new`, `.status-contacted`, `.status-qualified`
+  // and `.status-unqualified`, none of which exist — so real statuses rendered
+  // unstyled while the defined tokens went unused.
+  //
+  // Real values: Lead = Open|Pending|Archived|Converted,
+  // Deal = Open|Won|Lost|Pending, Ticket = Open|InProgress|Resolved|Closed.
+  // ---------------------------------------------------------------------------
+  --status-open-bg: #e0edff;
+  --status-open-text: #1d4ed8;
+  --status-pending-bg: #fff4e0;
+  --status-pending-text: #b45309;
+  --status-archived-bg: #eef0f3;
+  --status-archived-text: #55617a;
+  --status-converted-bg: #dcfce7;
+  --status-converted-text: #15803d;
+  --status-won-bg: #dcfce7;
+  --status-won-text: #15803d;
+  --status-lost-bg: #fee2e2;
+  --status-lost-text: #b91c1c;
+  --status-inprogress-bg: #ede9fe;
+  --status-inprogress-text: #6d28d9;
+  --status-resolved-bg: #dcfce7;
+  --status-resolved-text: #15803d;
+  --status-closed-bg: #eef0f3;
+  --status-closed-text: #55617a;
+}
+
+// =============================================================================
+// Dark theme
+//
+// Only the values that genuinely differ. The status pastels are included
+// because the previous dark block repeated the *light* pastels verbatim, which
+// put pale blue-on-white badges onto a dark surface.
+// =============================================================================
+@mixin dark-theme {
+  --bg-primary: #151a23;
+  --bg-secondary: #1c222d;
+  --bg-tertiary: #252c38;
+  --bg-canvas: #0f131a;
+
+  --text-primary: #eef1f6;
+  --text-secondary: #a3adbf;
+  // Was #6f7b90, which is 4.1:1 on the page and 3.3:1 on a raised surface -
+  // under the 4.5:1 that small text needs. Still clearly dimmer than secondary.
+  --text-tertiary: #8793a8;
+  --text-inverse: #0f172a;
+
+  --border-color: #2c3442;
+  --border-color-light: #232a35;
+  --border-color-strong: #3d4657;
+
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-hover: rgba(255, 255, 255, 0.16);
+
+  --input-bg: #1c222d;
+  --input-border: #3d4657;
+  --input-text: #eef1f6;
+  --input-placeholder: #6f7b90;
+  --input-disabled-bg: #232a35;
+
+  --sidebar-bg: #151a23;
+  --sidebar-text: #eef1f6;
+  --sidebar-text-secondary: #a3adbf;
+  --sidebar-border: #2c3442;
+  --sidebar-nav-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-nav-active: rgba(129, 140, 248, 0.16);
+
+  --modal-bg: #1c222d;
+  --modal-border: #2c3442;
+  --modal-overlay: rgba(4, 7, 12, 0.7);
+
+  --table-bg: #151a23;
+  --table-border: #2c3442;
+  --table-header-bg: #1c222d;
+  --table-row-hover: #1f2631;
+
+  --permission-badge-bg: rgba(129, 140, 248, 0.16);
+  --permission-badge-border: rgba(129, 140, 248, 0.32);
+  --permission-badge-text: #c7d2fe;
+
+  --scrollbar-thumb: #3d4657;
+  --scrollbar-thumb-hover: #55617a;
+
+  // Brighter brand and accents: the light-theme values do not carry enough
+  // contrast against a dark surface.
+  --brand-500: #818cf8;
+  // Hover goes lighter, not darker: the button label is dark in this theme, so
+  // darkening the fill dropped it to 4.0:1. This is 9:1.
+  --brand-600: #a5b4fc;
+  --brand-700: #4f46e5;
+  --brand-contrast: #0f172a;
+
+  --accent-success: #4ade80;
+  --accent-success-hover: #22c55e;
+  --accent-warning: #fbbf24;
+  --accent-error: #f87171;
+  --accent-error-hover: #ef4444;
+  --accent-info: #60a5fa;
+  --accent-info-hover: #3b82f6;
+
+  // Translucent fills rather than pastels, so badges sit on the dark surface.
+  --status-open-bg: rgba(96, 165, 250, 0.16);
+  --status-open-text: #93c5fd;
+  --status-pending-bg: rgba(251, 191, 36, 0.16);
+  --status-pending-text: #fcd34d;
+  --status-archived-bg: rgba(255, 255, 255, 0.06);
+  --status-archived-text: #a3adbf;
+  --status-converted-bg: rgba(74, 222, 128, 0.16);
+  --status-converted-text: #86efac;
+  --status-won-bg: rgba(74, 222, 128, 0.16);
+  --status-won-text: #86efac;
+  --status-lost-bg: rgba(248, 113, 113, 0.16);
+  --status-lost-text: #fca5a5;
+  --status-inprogress-bg: rgba(167, 139, 250, 0.18);
+  --status-inprogress-text: #c4b5fd;
+  --status-resolved-bg: rgba(74, 222, 128, 0.16);
+  --status-resolved-text: #86efac;
+  --status-closed-bg: rgba(255, 255, 255, 0.06);
+  --status-closed-text: #a3adbf;
+
+  // The dark column is the same four hues re-stepped for the dark surface, not
+  // a different palette. All four clear 3:1 contrast here.
+  --viz-grid: #2c3442;
+  --viz-axis: #6f7b90;
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --series-3: #c98500;
+  --series-4: #d55181;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.6);
+  --shadow-focus: 0 0 0 3px rgba(129, 140, 248, 0.45);
+}
+
+// Explicit choice wins, and is what main.tsx sets before first paint.
+:root[data-theme='dark'] {
+  @include dark-theme;
+}
+
+// Respect the OS preference when the user has expressed no choice. The old
+// stylesheet had no prefers-color-scheme handling at all.
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-theme;
+  }
+}
+
+// Honour a reduced-motion preference across every transition and animation.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

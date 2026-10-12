@@ -1,157 +1,158 @@
-import { useState } from 'react';
+import { LifeBuoy, Plus } from 'lucide-react';
 import { useAuth } from '../../../auth/auth-context';
 import { useSupportTickets, useCustomers, useUsers } from '../../../hooks';
-import { useDialog } from '../../../components/dialogs/DialogProvider';
+import { useResourcePage } from '../../../hooks/use-resource-page';
 import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
-import LoadingSpinner from '../../../components/ui/loading-spinner';
+import { TICKET_STATUS_LABELS } from '../../../types/common';
+import {
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  Pagination,
+  tone_for_status,
+  type Column,
+} from '../../../components/ui';
+import ListPage from '../../../components/layout/list-page';
 import SupportTicketModal from './support-ticket-modal';
-import '../(sales)/(leads)/leads.scss';
 
 const Support = () => {
   const { can } = useAuth();
-  const { tickets, loading, create, update, delete: deleteTicket, setError: setTickets_error } = useSupportTickets();
-  const { customers } = useCustomers();
-  const { users } = useUsers();
-  const { showAlert, showConfirm } = useDialog();
-  const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<SupportTicket | null>(null);
-  const [search_input, set_search_input] = useState('');
+  const tickets = useSupportTickets();
+  const { items: customers } = useCustomers();
+  const { items: users } = useUsers();
 
-  const filtered_tickets = tickets.filter((ticket) =>
-    ticket.title.toLowerCase().includes(search_input.toLowerCase()) ||
-    ticket.customer?.name.toLowerCase().includes(search_input.toLowerCase())
-  );
+  const page = useResourcePage<SupportTicket, SupportTicketInput>({
+    crud: tickets,
+    noun: 'ticket',
+  });
 
-  const handle_create = async (input: SupportTicketInput) => {
-    try {
-      await create(input);
-      set_modal_open(false);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to create ticket';
-      setTickets_error(error_msg);
-      await showAlert('Error', `Error creating ticket: ${error_msg}`);
-    }
-  };
-
-  const handle_update = async (input: SupportTicketInput) => {
-    if (!editing) return;
-    try {
-      await update(editing.id, input);
-      set_modal_open(false);
-      set_editing(null);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to update ticket';
-      setTickets_error(error_msg);
-      await showAlert('Error', `Error updating ticket: ${error_msg}`);
-    }
-  };
-
-  const handle_delete = async (id: string) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Ticket',
-      message: 'Are you sure you want to delete this ticket?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-    if (confirmed) {
-      try {
-        await deleteTicket(id);
-      } catch (err) {
-        const error_msg = err instanceof Error ? err.message : 'Failed to delete ticket';
-        setTickets_error(error_msg);
-        await showAlert('Error', `Error deleting ticket: ${error_msg}`);
-      }
-    }
-  };
-
-  const handle_open_create = () => {
-    set_editing(null);
-    set_modal_open(true);
-  };
-
-  const handle_open_edit = (ticket: SupportTicket) => {
-    set_editing(ticket);
-    set_modal_open(true);
-  };
-
-  const handle_close_modal = () => {
-    set_modal_open(false);
-    set_editing(null);
-  };
-
-  if (loading) return <LoadingSpinner />;
+  const columns: Column<SupportTicket>[] = [
+    {
+      key: 'issue',
+      header: 'Issue',
+      sort_value: (ticket) => ticket.issue_summary,
+      render: (ticket) => <span className="list-cell-primary">{ticket.issue_summary}</span>,
+    },
+    {
+      key: 'customer',
+      header: 'Customer',
+      sort_value: (ticket) => ticket.customer?.name ?? null,
+      hide_on_mobile: true,
+      render: (ticket) => ticket.customer?.name ?? <span className="muted">—</span>,
+    },
+    {
+      key: 'agent',
+      header: 'Agent',
+      sort_value: (ticket) => ticket.assigned_agent?.name ?? null,
+      hide_on_mobile: true,
+      render: (ticket) => ticket.assigned_agent?.name ?? <span className="muted">Unassigned</span>,
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      // Sorted by urgency, not alphabetically — "Urgent" before "Low".
+      sort_value: (ticket) => ({ Urgent: 0, High: 1, Medium: 2, Low: 3 })[ticket.priority],
+      render: (ticket) => <Badge tone={tone_for_status(ticket.priority)}>{ticket.priority}</Badge>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sort_value: (ticket) => ticket.status,
+      render: (ticket) => (
+        <Badge tone={tone_for_status(ticket.status)}>{TICKET_STATUS_LABELS[ticket.status]}</Badge>
+      ),
+    },
+    {
+      key: 'sla',
+      header: 'SLA',
+      sort_value: (ticket) => (ticket.is_sla_breached ? 0 : 1),
+      render: (ticket) =>
+        ticket.is_sla_breached ? (
+          <Badge tone="danger" title={`First response due ${new Date(ticket.sla_due_at).toLocaleString()}`}>
+            Breached
+          </Badge>
+        ) : (
+          <Badge tone="success">On track</Badge>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (ticket) => (
+        <div className="list-row-actions">
+          {can('support_tickets.update') && (
+            <Button size="sm" onClick={() => page.open_edit(ticket)}>
+              Edit
+            </Button>
+          )}
+          {can('support_tickets.delete') && (
+            <Button size="sm" variant="danger" onClick={() => page.remove(ticket.id)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="leads">
-      <div className="leads-header">
-        <h1>Support Tickets</h1>
-        {can('support_tickets.create') && (
-          <button className="btn-primary" onClick={handle_open_create}>
-            + New Ticket
-          </button>
-        )}
-      </div>
+    <ListPage
+      title="Support Tickets"
+      description="Your queue, with first-response SLA tracking."
+      search={{
+        value: page.search_input,
+        on_change: page.set_search_input,
+        placeholder: 'Search tickets by issue',
+        result_count: tickets.total,
+      }}
+      actions={
+        can('support_tickets.create') && (
+          <Button variant="primary" icon={<Plus />} onClick={page.open_create}>
+            New Ticket
+          </Button>
+        )
+      }
+    >
+      <DataTable
+        caption="Support tickets"
+        columns={columns}
+        rows={tickets.items}
+        row_key={(ticket) => ticket.id}
+        loading={tickets.loading}
+        empty={
+          <EmptyState
+            icon={<LifeBuoy />}
+            title={page.search_input ? 'No tickets match that search' : 'Queue is clear'}
+            description={
+              page.search_input
+                ? 'Try different wording from the issue summary.'
+                : 'New tickets will appear here as customers report problems.'
+            }
+          />
+        }
+      />
 
-      <div className="leads-search">
-        <input
-          type="text"
-          placeholder="Search tickets..."
-          value={search_input}
-          onChange={(e) => set_search_input(e.target.value)}
-          disabled={loading}
-        />
-      </div>
+      <Pagination
+        offset={tickets.offset}
+        limit={tickets.limit}
+        total={tickets.total}
+        on_previous={tickets.previous_page}
+        on_next={tickets.next_page}
+      />
 
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Customer</th>
-            <th>Assigned Rep</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered_tickets.map((ticket) => (
-            <tr key={ticket.id}>
-              <td>{ticket.title}</td>
-              <td>{ticket.customer?.name || '-'}</td>
-              <td>{ticket.assigned_rep?.name || 'Unassigned'}</td>
-              <td>{ticket.priority}</td>
-              <td>
-                <span className={`status status-${ticket.status.toLowerCase()}`}>
-                  {ticket.status}
-                </span>
-              </td>
-              <td className="actions">
-                {can('support_tickets.update') && (
-                  <button className="btn-small" onClick={() => handle_open_edit(ticket)}>
-                    Edit
-                  </button>
-                )}
-                {can('support_tickets.delete') && (
-                  <button className="btn-small btn-danger" onClick={() => handle_delete(ticket.id)}>
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {modal_open && (
+      {page.modal_open && (
         <SupportTicketModal
-          ticket={editing}
+          ticket={page.editing}
           customers={customers}
           users={users}
-          on_save={editing ? handle_update : handle_create}
-          on_close={handle_close_modal}
+          saving={page.saving}
+          on_save={page.submit}
+          on_close={page.close_modal}
         />
       )}
-    </div>
+    </ListPage>
   );
 };
 

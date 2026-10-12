@@ -25,8 +25,14 @@ export default gql`
     assigned_rep_id: ID
   }
 
+  type CustomerPage {
+    items: [Customer!]!
+    total: Int!
+    has_more: Boolean!
+  }
+
   type Query {
-    customers: [Customer!]!
+    customers(search: String, limit: Int, offset: Int): CustomerPage!
     customer(id: ID!): Customer
   }
 

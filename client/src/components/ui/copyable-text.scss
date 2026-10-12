@@ -1,0 +1,92 @@
+.ui-copyable {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  // Without this an inline-flex child refuses to shrink below its content, so
+  // the ellipsis below would never engage.
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ui-copyable-value {
+  // Phone numbers must never break mid-number, and an email reads better on
+  // one line too — the truncating variant clips instead of wrapping.
+  white-space: nowrap;
+}
+
+.ui-copyable-truncate {
+  // Caps how much of the row an arbitrarily long address may claim. Without a
+  // ceiling, `table-layout: auto` hands the email column whatever it asks for
+  // and squeezes the phone column until it wraps mid-number.
+  //
+  // 28ch against a real dataset whose addresses run 25–42 characters: the
+  // local part and the start of the domain survive, which is enough to tell
+  // two rows apart, and the rest is a hover away.
+  max-width: 28ch;
+
+  .ui-copyable-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+}
+
+.ui-copyable-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: var(--space-1);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  // Recessive until wanted: a copy button on every contact cell is visual
+  // noise, so it fades in with the row rather than competing with the value.
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-in-out),
+    color var(--duration-fast) var(--ease-in-out),
+    background var(--duration-fast) var(--ease-in-out);
+
+  svg {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 1px;
+  }
+}
+
+// Revealed by hovering the row, or by focusing the button itself — otherwise it
+// would be reachable by keyboard while invisible.
+tr:hover .ui-copyable-button,
+.ui-copyable:hover .ui-copyable-button,
+.ui-copyable-button:focus-visible {
+  opacity: 1;
+}
+
+// Touch has no hover, so the affordance has to be permanent there.
+@media (hover: none) {
+  .ui-copyable-button {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-copyable-button {
+    transition: none;
+  }
+}
+
+.ui-copyable-empty {
+  color: var(--text-tertiary);
+}

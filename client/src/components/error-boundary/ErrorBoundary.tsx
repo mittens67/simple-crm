@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
+import Button from '../ui/button';
 import './error-boundary.scss';
 
 interface ErrorBoundaryProps {
@@ -38,9 +39,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="error-content">
               <h1>Something went wrong</h1>
               <p className="error-message">{this.state.error?.message || 'An unexpected error occurred'}</p>
-              <button className="btn-primary" onClick={this.handleReset}>
+              <Button variant="primary" onClick={this.handleReset}>
                 Try Again
-              </button>
+              </Button>
             </div>
           </div>
         )

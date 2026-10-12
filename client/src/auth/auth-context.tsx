@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from 'react';
 import { gql, useApolloClient } from '@apollo/client';
 import type { AuthUser } from '../lib/auth';
+import type { Permission } from '../lib/permissions';
 import {
   USER_FIELDS,
   has_permission,
@@ -51,7 +52,8 @@ interface AuthContextValue {
   /** Switch to a different user role by index. Updates current_role_id in session. */
   switch_role: (role_index: number) => void;
   /** Check if current role has a permission using wildcard logic (exact, resource.*, or *) */
-  can: (permission: string) => boolean;
+  /** Typed so a misspelled key is a compile error, not a silent false. */
+  can: (permission: Permission) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -170,21 +172,6 @@ export const useAuth = (): AuthContextValue => {
   return ctx;
 };
 
-/**
- * Convenience hook to check a single permission without accessing full auth state.
- * Equivalent to `const { can } = useAuth(); can(permission)` but more concise.
- *
- * @param permission - Permission string to check (e.g. 'leads.read', 'deals.*')
- * @returns true if current role has the permission, false otherwise
- *
- * Example:
- * ```tsx
- * if (useCan('leads.delete')) {
- *   return <button onClick={delete}>Delete</button>;
- * }
- * ```
- */
-export const useCan = (permission: string): boolean => {
-  const { can } = useAuth();
-  return can(permission);
-};
+// useCan was exported here and imported by nothing: every consumer uses
+// `const { can } = useAuth()` instead. Removed rather than kept as a third
+// way to ask the same question, alongside the deleted RequirePermission.

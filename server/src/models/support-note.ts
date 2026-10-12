@@ -1,5 +1,6 @@
 // models/support-note.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { APPEND_ONLY_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
 export interface ISupportNote extends Document {
   customer_id: Types.ObjectId; // Ref to Customer
@@ -25,9 +26,11 @@ const SupportNoteSchema = new Schema<ISupportNote>(
       required: true,
     },
   },
-  {
-    timestamps: { createdAt: 'created_at', updatedAt: false },
-  }
+  APPEND_ONLY_SCHEMA_OPTIONS
 );
+
+add_indexes(SupportNoteSchema, {
+  owner_fields: ['customer_id', 'author_id'],
+});
 
 export default mongoose.model<ISupportNote>('SupportNote', SupportNoteSchema);

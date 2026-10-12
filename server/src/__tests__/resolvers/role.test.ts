@@ -79,12 +79,32 @@ describe('Role Resolver', () => {
   });
 
   describe('permissionCatalog query', () => {
-    it('returns the permission catalog', () => {
-      const result = roleResolvers.Query.permissionCatalog();
+    it('returns the permission catalog with roles.read permission', () => {
+      const context = mock_context(admin_user, admin_role) as any as ApolloContext;
+
+      const result = roleResolvers.Query.permissionCatalog(null, {}, context);
       expect(result).toBe(PERMISSION_CATALOG);
       expect(result.length).toBeGreaterThan(0);
       expect(result).toContain('leads.read');
       expect(result).toContain('users.create');
+    });
+
+    it('throws FORBIDDEN without roles.read permission', async () => {
+      const no_perm_role = await Role.create({
+        name: 'NoRoles',
+        permissions: { 'leads.read': true },
+      });
+      const no_perm_user = await User.create({
+        name: 'No Perm',
+        email: 'no-perm-catalog@example.com',
+        password: 'hashed',
+        role_ids: [no_perm_role._id],
+      });
+      const context = mock_context(no_perm_user, no_perm_role) as any as ApolloContext;
+
+      expect(() => roleResolvers.Query.permissionCatalog(null, {}, context)).toThrow(
+        'Missing permission: roles.read'
+      );
     });
   });
 

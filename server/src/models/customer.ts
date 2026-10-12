@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { BASE_SCHEMA_OPTIONS, add_indexes } from '../core/schema-defaults';
 
 export interface ICustomer extends Document {
   name: string;
@@ -19,7 +20,12 @@ const CustomerSchema = new Schema<ICustomer>(
       ref: 'User',
     },
   },
-  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
+  BASE_SCHEMA_OPTIONS
 );
+
+add_indexes(CustomerSchema, {
+  owner_fields: ['assigned_rep_id'],
+  searchable: ['email', 'name'],
+});
 
 export default mongoose.model<ICustomer>('Customer', CustomerSchema);

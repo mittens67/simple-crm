@@ -1,198 +1,96 @@
 .home {
-  padding: 2rem;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  min-height: 100vh;
-  color: var(--text-primary);
+  padding: var(--space-5);
+  max-width: 144rem;
+  margin: 0 auto;
+}
 
-  .home-header {
-    margin-bottom: 2.5rem;
+.home-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
 
-    h1 {
-      margin: 0 0 0.5rem;
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-  }
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(42rem, 1fr));
+  gap: var(--space-4);
+}
 
-  .home-subtitle {
+.home-chart {
+  min-width: 0;
+}
+
+.home-chart-note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+// Replaces Recharts' default tooltip, which is a hardcoded white box that
+// ignores the theme entirely.
+.viz-tooltip {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2) var(--space-3);
+
+  .viz-tooltip-label {
     margin: 0;
-    font-size: 1rem;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+  }
+
+  .viz-tooltip-value {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+  }
+}
+
+.home-table-wrap {
+  overflow-x: auto;
+}
+
+.home-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-color-light);
+    white-space: nowrap;
+  }
+
+  th {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
     color: var(--text-secondary);
+    font-weight: var(--weight-semibold);
   }
 
-  .home-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-
-    .stat-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 1.5rem;
-      border: 1px solid var(--glass-border);
-      border-left: 4px solid;
-      transition: all 0.2s;
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-
-      &:hover {
-        transform: translateY(-2px);
-        background: var(--glass-bg-hover);
-        border-color: var(--glass-border-hover);
-      }
-
-      .stat-icon {
-        font-size: 2rem;
-      }
-
-      .stat-content {
-        flex: 1;
-
-        .stat-label {
-          margin: 0 0 0.25rem;
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-weight: 600;
-        }
-
-        .stat-value {
-          margin: 0;
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: var(--text-primary);
-
-          .stat-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            margin-left: 0.25rem;
-          }
-        }
-      }
-    }
+  tbody tr:last-child td {
+    border-bottom: none;
   }
 
-  .home-content {
-    display: grid;
+  // The first column is the row's identity; the rest are figures.
+  td:not(:first-child) {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (max-width: 720px) {
+  .home {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .home-grid {
     grid-template-columns: 1fr;
-    gap: 2rem;
-
-    @media (min-width: 1024px) {
-      grid-template-columns: 2fr 1fr;
-    }
-  }
-
-  .home-section {
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid var(--glass-border);
-
-    h2 {
-      margin: 0 0 1.5rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-
-      .stat-item {
-        background: var(--table-bg);
-        border: 1px solid var(--border-color-light);
-        border-radius: 8px;
-        padding: 1.25rem;
-        text-align: center;
-        color: var(--text-primary);
-        transition: all 0.2s;
-
-        &:hover {
-          background: var(--table-row-hover);
-          border-color: var(--border-color);
-        }
-
-        .stat-label {
-          display: block;
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          margin-bottom: 0.5rem;
-          font-weight: 500;
-        }
-
-        .stat-number {
-          display: block;
-          font-size: 1.75rem;
-          font-weight: 700;
-        }
-      }
-    }
-
-    .recent-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-
-      .recent-item {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        padding: 1rem;
-        background: var(--table-bg);
-        border-radius: 8px;
-        transition: all 0.2s;
-        border-left: 3px solid transparent;
-        border: 1px solid var(--border-color-light);
-
-        &:hover {
-          background: var(--table-row-hover);
-          border-color: var(--border-color);
-        }
-
-        &.recent-lead {
-          border-left-color: #22c55e;
-        }
-
-        &.recent-customer {
-          border-left-color: #60a5fa;
-        }
-
-        .recent-badge {
-          font-size: 1.5rem;
-          flex-shrink: 0;
-        }
-
-        .recent-content {
-          flex: 1;
-          min-width: 0;
-
-          .recent-title {
-            margin: 0 0 0.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .recent-subtitle {
-            margin: 0;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-        }
-      }
-    }
   }
 }

@@ -46,23 +46,27 @@ describe('AlertDialog', () => {
       />
     );
 
-    const closeButton = screen.getByLabelText('Close');
+    const closeButton = screen.getByLabelText('Close dialog');
     await user.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalledOnce();
   });
 
-  it('renders dialog overlay', () => {
+  it('renders as an accessible modal dialog in a portal', () => {
     const mockOnClose = vi.fn();
     const { container } = render(
-      <AlertDialog
-        title="Test"
-        message="Test message"
-        onClose={mockOnClose}
-      />
+      <AlertDialog title="Test" message="Test message" onClose={mockOnClose} />
     );
 
-    const overlay = container.querySelector('.dialog-overlay');
-    expect(overlay).toBeInTheDocument();
+    // Rendered through a portal to document.body, so it is deliberately NOT
+    // inside the component's own container — that is what stops a parent's
+    // overflow clipping it.
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    // The title labels the dialog, which the old markup never wired up.
+    expect(dialog).toHaveAccessibleName('Test');
   });
 });

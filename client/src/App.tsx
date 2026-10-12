@@ -1,20 +1,19 @@
-import { useState } from 'react';
-import './app.scss'
+import './app.scss';
 import Navigation from './navigation';
 import { ServerWakeUp } from './components/ui/server-wake-up';
 
+/**
+ * The app renders immediately. ServerWakeUp is a non-blocking banner rather
+ * than a gate, so a cold backend no longer hides the login form for up to
+ * thirty seconds.
+ */
 function App() {
-  const [server_ready, set_server_ready] = useState(false);
-
-  if (!server_ready) {
-    return <ServerWakeUp onSuccess={() => set_server_ready(true)} />;
-  }
-
   return (
-    <div className='app'>
+    <div className="app">
       <Navigation />
+      <ServerWakeUp />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

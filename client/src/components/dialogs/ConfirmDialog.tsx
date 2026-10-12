@@ -1,4 +1,5 @@
-import './dialogs.scss';
+import Modal from '../ui/modal';
+import Button from '../ui/button';
 
 interface ConfirmDialogProps {
   title: string;
@@ -10,6 +11,14 @@ interface ConfirmDialogProps {
   loading?: boolean;
 }
 
+/**
+ * Built on the shared Modal primitive.
+ *
+ * Previously this rendered its own `.dialog-overlay` markup against a second,
+ * parallel modal stylesheet that shared no rules with the `.modal-overlay`
+ * system used by the page modals. Both are now the same component, so focus
+ * trapping, Escape handling, the portal and the scroll lock apply here too.
+ */
 export const ConfirmDialog = ({
   title,
   message,
@@ -18,28 +27,22 @@ export const ConfirmDialog = ({
   onConfirm,
   onCancel,
   loading = false,
-}: ConfirmDialogProps) => {
-  return (
-    <div className="dialog-overlay" onClick={onCancel} role="presentation">
-      <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
-        <div className="dialog-header">
-          <h2>{title}</h2>
-          <button className="dialog-close" onClick={onCancel} aria-label="Close">
-            ✕
-          </button>
-        </div>
-        <div className="dialog-body">
-          <p>{message}</p>
-        </div>
-        <div className="dialog-footer">
-          <button className="btn-secondary" onClick={onCancel} disabled={loading}>
-            {cancelText}
-          </button>
-          <button className="btn-danger" onClick={onConfirm} disabled={loading}>
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+}: ConfirmDialogProps) => (
+  <Modal
+    title={title}
+    on_close={onCancel}
+    size="sm"
+    footer={
+      <>
+        <Button onClick={onCancel} disabled={loading}>
+          {cancelText}
+        </Button>
+        <Button variant="danger" onClick={onConfirm} loading={loading}>
+          {confirmText}
+        </Button>
+      </>
+    }
+  >
+    <p className="dialog-message">{message}</p>
+  </Modal>
+);

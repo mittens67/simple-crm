@@ -20,9 +20,34 @@ export interface AsyncState<T> {
   error: ApiError | null;
 }
 
+// These mirror the GraphQL enums exactly. The stored values, the GraphQL enum
+// names and these unions are all kept identical so nothing has to translate
+// between them — see server/src/graphql/schemas/*.ts.
 export type LeadStatus = 'Open' | 'Pending' | 'Archived' | 'Converted';
-export type DealStatus = 'Open' | 'Won' | 'Lost' | 'Closed';
-export type TicketStatus = 'Open' | 'In Progress' | 'Closed' | 'On Hold';
+export type DealStatus = 'Open' | 'Won' | 'Lost' | 'Pending';
+export type TicketStatus = 'Open' | 'InProgress' | 'Resolved' | 'Closed';
+
+export const LEAD_STATUSES: readonly LeadStatus[] = ['Open', 'Pending', 'Archived', 'Converted'];
+export const DEAL_STATUSES: readonly DealStatus[] = ['Open', 'Won', 'Lost', 'Pending'];
+export const TICKET_STATUSES: readonly TicketStatus[] = ['Open', 'InProgress', 'Resolved', 'Closed'];
+
+// `Deal.stage` is a free-form string server-side. These are the interim values
+// the UI offers until Phase 2 replaces them with a real Pipeline/Stage entity.
+export const DEAL_STAGES = [
+  'Prospecting',
+  'Qualification',
+  'Proposal',
+  'Negotiation',
+  'Closing',
+] as const;
+
+/** InProgress is the only status whose label differs from its value. */
+export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
+  Open: 'Open',
+  InProgress: 'In Progress',
+  Resolved: 'Resolved',
+  Closed: 'Closed',
+};
 
 export interface User {
   id: string;

@@ -11,13 +11,33 @@ import { context, ApolloContext } from './graphql/context';
 import { typeDefs } from './graphql/typedefs';
 import { resolvers } from './graphql/resolvers';
 import { connect_db } from './config/db';
+import { format_error } from './utils/errors';
 
 const start_server = async () => {
   const app = express();
 
+  // Render/Railway/Heroku put the app behind a proxy. Without this,
+  // express-rate-limit keys every request to the proxy's IP, so a single
+  // active user would rate-limit everyone.
+  if (env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
+
   const server = new ApolloServer<ApolloContext>({
     typeDefs,
     resolvers,
+    // One error strategy for the whole schema. Previously the AppError
+    // hierarchy only applied to resolvers that remembered to wrap themselves,
+    // so a missing customer surfaced as INTERNAL_SERVER_ERROR.
+    formatError: (formatted, thrown) => {
+      const mapped = format_error(thrown);
+      return {
+        ...formatted,
+        message: mapped.message,
+        extensions: { ...formatted.extensions, ...mapped.extensions },
+      };
+    },
+    introspection: env.NODE_ENV !== 'production',
   });
 
   await server.start();
@@ -26,19 +46,18 @@ const start_server = async () => {
   app.use(express.json());
   app.use(cookieParser());
 
-  // General rate limiter: 100 requests per 15 minutes per IP
   const general_limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs: env.RATE_LIMIT_WINDOW_MS,
+    max: env.RATE_LIMIT_MAX,
     message: 'Too many requests, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
   });
 
-  // Strict rate limiter for auth mutations: 5 attempts per 15 minutes
+  // Strict limiter for auth mutations, to slow credential stuffing.
   const auth_limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
+    windowMs: env.RATE_LIMIT_WINDOW_MS,
+    max: env.AUTH_RATE_LIMIT_MAX,
     skip: (req) => {
       const body = (req as any).body;
       if (!body || !body.operationName) return true;
@@ -75,4 +94,7 @@ const start_server = async () => {
   });
 };
 
-start_server();
+start_server().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});

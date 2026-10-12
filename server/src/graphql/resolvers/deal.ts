@@ -1,101 +1,75 @@
-import { GraphQLError } from 'graphql';
-import Deal from '../../models/deal';
-import User from '../../models/user';
-import Customer from '../../models/customer';
 import { ApolloContext } from '../context';
-import { require_permission } from '../../auth/authorize';
+import { deal_service, days_between, weighted_value } from '../../services/deal';
+import { load_by_ref } from '../loaders';
+import { IDeal } from '../../models/deal';
+import { IPipeline } from '../../models/pipeline';
+
+/** Resolves the deal's pipeline through the loader, so stage lookups batch. */
+const pipeline_for = (deal: IDeal, context: ApolloContext) =>
+  load_by_ref<IPipeline>(context.loaders.pipeline, deal.pipeline_id);
 
 export default {
   Query: {
-    deals: async (_: any, __: any, context: ApolloContext) => {
-      require_permission(context, 'deals.read');
-      return await Deal.find().populate('customer_id').populate('owner_id');
-    },
-    deal: async (_: any, { id }: any, context: ApolloContext) => {
-      require_permission(context, 'deals.read');
-      return await Deal.findById(id).populate('customer_id').populate('owner_id');
-    },
-    dealsByOwner: async (_: any, { owner_id }: any, context: ApolloContext) => {
-      require_permission(context, 'deals.read');
-      return await Deal.find({ owner_id }).populate('customer_id').populate('owner_id');
-    },
+    deals: (
+      _: unknown,
+      args: { search?: string; limit?: number; offset?: number },
+      context: ApolloContext
+    ) => deal_service.list(context, args),
+
+    deal: (_: unknown, { id }: { id: string }, context: ApolloContext) =>
+      deal_service.get(context, id),
+
+    dealsByOwner: (_: unknown, { owner_id }: { owner_id: string }, context: ApolloContext) =>
+      deal_service.list_by_owner(context, owner_id),
+
+    pipelineBoard: (
+      _: unknown,
+      { pipeline_id }: { pipeline_id?: string },
+      context: ApolloContext
+    ) => deal_service.board(context, pipeline_id),
   },
 
   Mutation: {
-    createDeal: async (_: any, { input }: any, context: ApolloContext) => {
-      require_permission(context, 'deals.create');
-      const { title, customer_id, owner_id, value, status = 'Open', stage } = input;
+    createDeal: (_: unknown, { input }: { input: unknown }, context: ApolloContext) =>
+      deal_service.create(context, input),
 
-      const customer = await Customer.findById(customer_id);
-      if (!customer) {
-        throw new GraphQLError('Customer not found', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
-      }
+    updateDeal: (_: unknown, { id, input }: { id: string; input: unknown }, context: ApolloContext) =>
+      deal_service.update(context, id, input),
 
-      if (owner_id) {
-        const owner = await User.findById(owner_id);
-        if (!owner) {
-          throw new GraphQLError('Deal owner not found', {
-            extensions: { code: 'BAD_USER_INPUT' },
-          });
-        }
-      }
+    moveDealToStage: (
+      _: unknown,
+      { id, stage_id }: { id: string; stage_id: string },
+      context: ApolloContext
+    ) => deal_service.move_to_stage(context, id, stage_id),
 
-      const deal = new Deal({
-        title,
-        customer_id,
-        ...(owner_id && { owner_id }),
-        value,
-        status,
-        stage,
-      });
-      await deal.save();
-      return deal;
-    },
-
-    updateDeal: async (_: any, { id, input }: any, context: ApolloContext) => {
-      require_permission(context, 'deals.update');
-
-      const deal = await Deal.findById(id);
-      if (!deal) throw new GraphQLError('Deal not found');
-
-      if (input.customer_id) {
-        const customer = await Customer.findById(input.customer_id);
-        if (!customer) {
-          throw new GraphQLError('Customer not found', {
-            extensions: { code: 'BAD_USER_INPUT' },
-          });
-        }
-      }
-
-      if (input.owner_id) {
-        const owner = await User.findById(input.owner_id);
-        if (!owner) {
-          throw new GraphQLError('Owner not found', {
-            extensions: { code: 'BAD_USER_INPUT' },
-          });
-        }
-      }
-
-      Object.assign(deal, input);
-      await deal.save();
-      return deal;
-    },
-
-    deleteDeal: async (_: any, { id }: any, context: ApolloContext) => {
-      require_permission(context, 'deals.delete');
-      const result = await Deal.findByIdAndDelete(id);
-      return !!result;
-    },
+    deleteDeal: (_: unknown, { id }: { id: string }, context: ApolloContext) =>
+      deal_service.remove(context, id),
   },
 
   Deal: {
-    customer: async (parent: any) => {
-      return await Customer.findById(parent.customer_id);
+    // Batched via DataLoader. Previously each of these re-queried per row,
+    // on top of a .populate() that had already fetched the same documents.
+    customer: (deal: IDeal, _: unknown, context: ApolloContext) =>
+      load_by_ref(context.loaders.customer, deal.customer_id),
+
+    owner: (deal: IDeal, _: unknown, context: ApolloContext) =>
+      load_by_ref(context.loaders.user, deal.owner_id),
+
+    pipeline: (deal: IDeal, _: unknown, context: ApolloContext) => pipeline_for(deal, context),
+
+    stage: async (deal: IDeal, _: unknown, context: ApolloContext) => {
+      const pipeline = await pipeline_for(deal, context);
+      return pipeline?.stages.id(deal.stage_id) ?? null;
     },
-    owner: async (parent: any) => {
-      return await User.findById(parent.owner_id);
-    },
+
+    weighted_value: async (deal: IDeal, _: unknown, context: ApolloContext) =>
+      weighted_value(deal, await pipeline_for(deal, context)),
+
+    days_in_stage: (deal: IDeal) => days_between(deal.stage_entered_at, new Date()),
+  },
+
+  PipelineBoardColumn: {
+    // Board columns carry their stage subdocument directly.
+    stage: (column: { stage: unknown }) => column.stage,
   },
 };

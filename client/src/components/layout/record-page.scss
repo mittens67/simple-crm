@@ -1,0 +1,94 @@
+.record-page {
+  padding: var(--space-5);
+  max-width: 128rem;
+  margin: 0 auto;
+}
+
+.record-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--brand-500);
+    text-decoration: none;
+  }
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+.record-layout {
+  display: grid;
+  // Main column first, facts sidebar second.
+  grid-template-columns: minmax(0, 1fr) 32rem;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.record-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.record-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  // Facts stay visible while the timeline scrolls.
+  position: sticky;
+  top: var(--space-4);
+}
+
+.record-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  dt {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-1);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--text-base);
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 960px) {
+  .record-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .record-aside {
+    position: static;
+    // Facts read better above the history on a narrow screen.
+    order: -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .record-page {
+    padding: var(--space-4) var(--space-3);
+  }
+}

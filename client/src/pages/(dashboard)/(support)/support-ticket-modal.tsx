@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { SupportTicket, SupportTicketInput } from '../../../types/support-ticket';
+import {
+  TICKET_PRIORITIES,
+  TICKET_CATEGORIES,
+  TICKET_CATEGORY_LABELS,
+} from '../../../types/support-ticket';
+import { TICKET_STATUSES, TICKET_STATUS_LABELS } from '../../../types/common';
+import { Button, Modal, Select, Textarea } from '../../../components/ui';
 
 interface Customer {
   id: string;
@@ -15,181 +22,178 @@ interface SupportTicketModalProps {
   ticket: SupportTicket | null;
   customers: Customer[];
   users: User[];
+  saving?: boolean;
   on_save: (input: SupportTicketInput) => void;
   on_close: () => void;
 }
+
+const empty_form = {
+  customer_id: '',
+  assigned_agent: '',
+  issue_summary: '',
+  status: 'Open',
+  internal_notes: '',
+  priority: 'Medium',
+  category: 'Other',
+};
+
+/** Response deadlines, mirroring SLA_RESPONSE_HOURS on the server. */
+const SLA_HINT: Record<string, string> = {
+  Urgent: 'First response due within 1 hour',
+  High: 'First response due within 4 hours',
+  Medium: 'First response due within 24 hours',
+  Low: 'First response due within 72 hours',
+};
+
+const validate = (form: typeof empty_form) => {
+  const errors: Partial<Record<keyof typeof empty_form, string>> = {};
+  if (!form.customer_id) errors.customer_id = 'Choose a customer';
+  if (!form.assigned_agent) errors.assigned_agent = 'Choose an agent';
+  if (!form.issue_summary.trim()) errors.issue_summary = 'Describe the issue';
+  else if (form.issue_summary.length > 500) {
+    errors.issue_summary = 'Must be 500 characters or less';
+  }
+  return errors;
+};
 
 const SupportTicketModal = ({
   ticket,
   customers,
   users,
+  saving,
   on_save,
   on_close,
 }: SupportTicketModalProps) => {
-  const [form_data, set_form_data] = useState({
-    customer_id: '',
-    assigned_rep_id: '',
-    title: '',
-    description: '',
-    status: 'Open',
-    priority: 'Medium',
-    resolution: '',
-  });
+  const [form_data, set_form_data] = useState(empty_form);
+  const [errors, set_errors] = useState<ReturnType<typeof validate>>({});
+  const [submitted, set_submitted] = useState(false);
 
   useEffect(() => {
-    if (ticket) {
-      set_form_data({
-        customer_id: ticket.customer_id || '',
-        assigned_rep_id: ticket.assigned_rep_id || '',
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
-        priority: ticket.priority,
-        resolution: ticket.resolution || '',
-      });
+    if (!ticket) {
+      set_form_data(empty_form);
+      set_errors({});
+      set_submitted(false);
+      return;
     }
+    set_form_data({
+      customer_id: ticket.customer?.id || ticket.customer_id || '',
+      assigned_agent: ticket.assigned_agent?.id || '',
+      issue_summary: ticket.issue_summary,
+      status: ticket.status,
+      internal_notes: ticket.internal_notes || '',
+      priority: ticket.priority,
+      category: ticket.category,
+    });
   }, [ticket]);
 
-  const handle_change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    set_form_data((prev) => ({ ...prev, [name]: value }));
+  const update = (field: keyof typeof empty_form) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const next = { ...form_data, [field]: event.target.value };
+    set_form_data(next);
+    if (submitted) set_errors(validate(next));
   };
 
-  const handle_submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handle_submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    set_submitted(true);
 
-    if (ticket) {
-      const partial_input: Partial<SupportTicketInput> = {};
-      if (form_data.title) partial_input.title = form_data.title;
-      if (form_data.description) partial_input.description = form_data.description;
-      if (form_data.status) partial_input.status = form_data.status as SupportTicket['status'];
-      if (form_data.priority) partial_input.priority = form_data.priority as SupportTicket['priority'];
-      if (form_data.resolution !== undefined) partial_input.resolution = form_data.resolution;
-      if (form_data.assigned_rep_id !== undefined) partial_input.assigned_rep_id = form_data.assigned_rep_id || null;
-      on_save(partial_input as SupportTicketInput);
-    } else {
-      on_save({
-        customer_id: form_data.customer_id,
-        assigned_rep_id: form_data.assigned_rep_id || undefined,
-        title: form_data.title,
-        description: form_data.description,
-        status: form_data.status as SupportTicket['status'],
-        priority: form_data.priority as SupportTicket['priority'],
-        resolution: form_data.resolution || undefined,
-      });
-    }
+    const found = validate(form_data);
+    set_errors(found);
+    if (Object.keys(found).length > 0) return;
+
+    on_save({
+      customer_id: form_data.customer_id,
+      assigned_agent: form_data.assigned_agent || null,
+      issue_summary: form_data.issue_summary,
+      status: form_data.status as SupportTicket['status'],
+      internal_notes: form_data.internal_notes || undefined,
+      priority: form_data.priority as SupportTicket['priority'],
+      category: form_data.category as SupportTicket['category'],
+    });
   };
 
   return (
-    <div className="modal-overlay" onClick={on_close}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{ticket ? 'Edit Ticket' : 'New Ticket'}</h2>
-          <button className="modal-close" onClick={on_close}>
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handle_submit} className="modal-form">
-          {!ticket && (
-            <>
-              <div className="form-group">
-                <label>Customer *</label>
-                <select
-                  name="customer_id"
-                  value={form_data.customer_id}
-                  onChange={handle_change}
-                  required
-                >
-                  <option value="">Select a customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={form_data.title}
-                  onChange={handle_change}
-                  required
-                />
-              </div>
-            </>
-          )}
-
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={form_data.description}
-              onChange={handle_change}
-              rows={3}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Priority</label>
-            <select name="priority" value={form_data.priority} onChange={handle_change}>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Assigned Rep</label>
-            <select
-              name="assigned_rep_id"
-              value={form_data.assigned_rep_id}
-              onChange={handle_change}
-            >
-              <option value="">Unassigned</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Status</label>
-            <select name="status" value={form_data.status} onChange={handle_change}>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="On Hold">On Hold</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Resolution</label>
-            <textarea
-              name="resolution"
-              value={form_data.resolution}
-              onChange={handle_change}
-              rows={4}
-            />
-          </div>
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={on_close}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary">
-              {ticket ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Modal
+      title={ticket ? 'Edit Ticket' : 'New Ticket'}
+      on_close={on_close}
+      footer={
+        <>
+          <Button onClick={on_close} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" form="ticket-form" loading={saving}>
+            {ticket ? 'Update' : 'Create'}
+          </Button>
+        </>
+      }
+    >
+      <form id="ticket-form" onSubmit={handle_submit} noValidate>
+        <Select
+          label="Customer"
+          required
+          value={form_data.customer_id}
+          onChange={update('customer_id')}
+          placeholder="Select a customer"
+          error={errors.customer_id}
+          options={customers.map((customer) => ({ value: customer.id, label: customer.name }))}
+        />
+        <Textarea
+          label="Issue Summary"
+          required
+          rows={3}
+          value={form_data.issue_summary}
+          onChange={update('issue_summary')}
+          error={errors.issue_summary}
+        />
+        <Select
+          label="Assigned Agent"
+          required
+          value={form_data.assigned_agent}
+          onChange={update('assigned_agent')}
+          placeholder="Select an agent"
+          error={errors.assigned_agent}
+          options={users.map((user) => ({ value: user.id, label: user.name }))}
+        />
+        <Select
+          label="Priority"
+          value={form_data.priority}
+          onChange={update('priority')}
+          // The deadline is derived from priority on the server.
+          hint={ticket ? undefined : SLA_HINT[form_data.priority]}
+          options={TICKET_PRIORITIES.map((priority) => ({ value: priority, label: priority }))}
+        />
+        <Select
+          label="Category"
+          value={form_data.category}
+          onChange={update('category')}
+          options={TICKET_CATEGORIES.map((category) => ({
+            value: category,
+            label: TICKET_CATEGORY_LABELS[category],
+          }))}
+        />
+        <Select
+          label="Status"
+          value={form_data.status}
+          onChange={update('status')}
+          hint={
+            ticket && !ticket.first_response_at
+              ? 'Moving this off Open records the first response.'
+              : undefined
+          }
+          options={TICKET_STATUSES.map((status) => ({
+            value: status,
+            label: TICKET_STATUS_LABELS[status],
+          }))}
+        />
+        <Textarea
+          label="Internal Notes"
+          rows={3}
+          value={form_data.internal_notes}
+          onChange={update('internal_notes')}
+        />
+      </form>
+    </Modal>
   );
 };
 

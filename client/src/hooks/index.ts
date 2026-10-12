@@ -1,5 +1,3 @@
-export { useLeads } from './useLeads';
-export { useCustomers } from './useCustomers';
-export { useDeals } from './useDeals';
-export { useSupportTickets } from './useSupportTickets';
-export { useUsers } from './useUsers';
+export { useEntityCrud, DEFAULT_PAGE_SIZE } from './use-entity-crud';
+export type { EntityPage } from './use-entity-crud';
+export { useLeads, useCustomers, useDeals, useSupportTickets, useUsers } from './entities';

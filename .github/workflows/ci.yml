@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - '**'
+  push:
+    branches:
+      - main
+
+env:
+  DEMO_PASSWORD: Demo123!
+
+jobs:
+  client:
+    name: Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm --dir client install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --dir client lint
+
+      - name: Typecheck
+        run: pnpm --dir client exec tsc -b --force
+
+      - name: Test
+        run: pnpm --dir client test:run
+
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: server/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm --dir server install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --dir server lint
+
+      - name: Typecheck
+        run: pnpm --dir server typecheck
+
+      - name: Test
+        run: pnpm --dir server test:run
+
+  # Catches the class of bug that broke this deployment: runtime dependencies
+  # declared under devDependencies. `pnpm install --prod` omits devDependencies,
+  # so anything the server imports at runtime must resolve here.
+  production-install:
+    name: Production install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build with full dependencies
+        run: |
+          pnpm --dir server install --frozen-lockfile
+          pnpm --dir server build
+
+      - name: Reinstall production dependencies only
+        run: pnpm --dir server install --prod --frozen-lockfile
+
+      - name: Runtime imports must resolve
+        working-directory: server
+        run: node -e "['zod','helmet','express-rate-limit','express','mongoose','@apollo/server'].forEach(d => { require.resolve(d); console.log('ok', d); })"
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        # A standalone, so transactions are unavailable here. core/transaction.ts
+        # degrades gracefully, and the unit suite runs against a single-node
+        # replica set where the rollback path is genuinely exercised.
+        image: mongo:7
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: |
+            client/pnpm-lock.yaml
+            server/pnpm-lock.yaml
+
+      - name: Install client dependencies
+        run: pnpm --dir client install --frozen-lockfile
+
+      - name: Install server dependencies
+        run: pnpm --dir server install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --dir client exec playwright install --with-deps chromium
+
+      # `pnpm seed` runs under ts-node, not ts-node-dev. ts-node-dev is a
+      # watcher that never exits, so this step used to hang indefinitely.
+      - name: Seed database
+        run: pnpm --dir server seed
+        env:
+          MONGO_URI: mongodb://localhost:27017/crm_test
+          ADMIN_EMAIL: admin@test.com
+          ADMIN_PASSWORD: AdminTest123
+          JWT_ACCESS_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+          DEMO_PASSWORD: ${{ env.DEMO_PASSWORD }}
+
+      - name: Run E2E tests
+        run: pnpm --dir client e2e
+        env:
+          MONGO_URI: mongodb://localhost:27017/crm_test
+          JWT_ACCESS_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+          DEMO_PASSWORD: ${{ env.DEMO_PASSWORD }}
+          PORT: 4000
+          # The deterministic mock, so e2e needs no API key and no network.
+          AI_PROVIDER: mock
+          # The suite logs in repeatedly and the dashboard fires several
+          # aggregations per load; the defaults would throttle it.
+          RATE_LIMIT_MAX: '5000'
+          AUTH_RATE_LIMIT_MAX: '500'
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: client/playwright-report/
+          retention-days: 7

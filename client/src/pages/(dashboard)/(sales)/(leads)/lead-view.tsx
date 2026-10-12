@@ -1,103 +1,85 @@
-interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: string;
-  assigned_rep?: {
-    id: string;
-    name: string;
-  };
-  customer?: {
-    id: string;
-    name: string;
-  };
-  sales_notes?: string;
-  archive_notes?: string;
-}
+import type { Lead } from '../../../../types/lead';
+import { Badge, Button, Modal, tone_for_status } from '../../../../components/ui';
+import './lead-view.scss';
 
 interface LeadViewProps {
   lead: Lead;
   on_close: () => void;
 }
 
-const LeadView = ({ lead, on_close }: LeadViewProps) => {
-  return (
-    <div className="modal-overlay" onClick={on_close}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>View Lead</h2>
-          <button className="modal-close" onClick={on_close}>
-            ✕
-          </button>
-        </div>
+const format_date = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
-        <div className="modal-view">
-          <div className="view-section">
-            <h3>Basic Information</h3>
-            <div className="view-group">
-              <label>Name</label>
-              <p>{lead.name}</p>
-            </div>
-            <div className="view-group">
-              <label>Email</label>
-              <p>{lead.email}</p>
-            </div>
-            <div className="view-group">
-              <label>Phone</label>
-              <p>{lead.phone}</p>
-            </div>
-          </div>
-
-          <div className="view-section">
-            <h3>Status & Assignment</h3>
-            <div className="view-group">
-              <label>Status</label>
-              <p>
-                <span className={`status status-${lead.status.toLowerCase()}`}>
-                  {lead.status}
-                </span>
-              </p>
-            </div>
-            <div className="view-group">
-              <label>Assigned Rep</label>
-              <p>{lead.assigned_rep?.name || 'Unassigned'}</p>
-            </div>
-            {lead.customer && (
-              <div className="view-group">
-                <label>Converted To</label>
-                <p>{lead.customer.name}</p>
-              </div>
-            )}
-          </div>
-
-          {lead.sales_notes && lead.status !== 'Archived' && (
-            <div className="view-section">
-              <h3>Sales Notes</h3>
-              <div className="view-group">
-                <p className="notes-text">{lead.sales_notes}</p>
-              </div>
-            </div>
-          )}
-
-          {lead.archive_notes && (
-            <div className="view-section">
-              <h3>Archive Notes</h3>
-              <div className="view-group">
-                <p className="notes-text">{lead.archive_notes}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={on_close}>
-              Close
-            </button>
-          </div>
-        </div>
+/**
+ * Read-only view for leads in a terminal state (Archived or Converted), which
+ * cannot be edited.
+ */
+const LeadView = ({ lead, on_close }: LeadViewProps) => (
+  <Modal
+    title="Lead details"
+    on_close={on_close}
+    footer={
+      <Button variant="primary" onClick={on_close}>
+        Close
+      </Button>
+    }
+  >
+    <dl className="lead-view">
+      <div>
+        <dt>Name</dt>
+        <dd>{lead.name}</dd>
       </div>
-    </div>
-  );
-};
+      <div>
+        <dt>Email</dt>
+        <dd>{lead.email}</dd>
+      </div>
+      <div>
+        <dt>Phone</dt>
+        <dd>{lead.phone}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>
+          <Badge tone={tone_for_status(lead.status)}>{lead.status}</Badge>
+        </dd>
+      </div>
+      <div>
+        <dt>Assigned rep</dt>
+        <dd>{lead.assigned_rep?.name ?? '—'}</dd>
+      </div>
+      <div>
+        <dt>Converted to</dt>
+        <dd>{lead.customer?.name ?? '—'}</dd>
+      </div>
+      <div>
+        <dt>Created</dt>
+        <dd>{format_date(lead.created_at)}</dd>
+      </div>
+      <div>
+        <dt>Last updated</dt>
+        <dd>{format_date(lead.updated_at)}</dd>
+      </div>
+
+      {lead.sales_notes && (
+        <div className="lead-view-wide">
+          <dt>Sales notes</dt>
+          <dd>{lead.sales_notes}</dd>
+        </div>
+      )}
+      {lead.archive_notes && (
+        <div className="lead-view-wide">
+          <dt>Archive notes</dt>
+          <dd>{lead.archive_notes}</dd>
+        </div>
+      )}
+      {lead.ai_rationale && (
+        <div className="lead-view-wide">
+          <dt>AI assessment{lead.ai_score != null && ` (${lead.ai_score})`}</dt>
+          <dd>{lead.ai_rationale}</dd>
+        </div>
+      )}
+    </dl>
+  </Modal>
+);
 
 export default LeadView;

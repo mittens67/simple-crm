@@ -1,28 +1,26 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import { beforeAll, afterAll, inject } from 'vitest';
 
 // Set test env vars before any code imports them
 process.env.MONGO_URI = 'mongodb://test:test@localhost:27017/test';
 process.env.JWT_ACCESS_SECRET = 'test-access-secret';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
 
-let mongoServer: MongoMemoryServer;
+// Every test file gets its own database inside the shared mongod (started once
+// in global-setup.ts), so files stay isolated from each other while running in
+// parallel without paying for a server boot each.
+const db_name = `test-${randomUUID()}`;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  process.env.MONGO_URI = mongoUri; // Override with actual in-memory server
-  await mongoose.connect(mongoUri);
+  const mongo_uri = inject('mongo_uri');
+  process.env.MONGO_URI = mongo_uri;
+  // monitorCommands lets tests observe the actual queries issued, which is how
+  // the DataLoader batching test measures rather than assumes.
+  await mongoose.connect(mongo_uri, { dbName: db_name, monitorCommands: true });
 });
 
 afterAll(async () => {
+  await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
-  await mongoServer.stop();
-});
-
-beforeEach(async () => {
-  // Clear only data collections, not reference collections like roles/users
-  // Each test file will clear what it needs in its own beforeEach if needed
-  // This is left empty to let individual test files control their cleanup
 });

@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import User from '../../models/user';
 import Role from '../../models/role';
-import ActivityLog from '../../models/activity-log';
+import AuditLog from '../../models/audit-log';
 import { ApolloContext } from '../context';
 import { require_auth, require_permission } from '../../auth/authorize';
 import {
@@ -113,7 +113,7 @@ export default {
       await user.save();
       await revoke_all_for_user(user._id as any);
 
-      await ActivityLog.create({
+      await AuditLog.create({
         user_id: actor._id,
         action: 'User deactivated',
         metadata: { user_id: user._id },

@@ -5,6 +5,11 @@ import { useAuth } from '../auth/auth-context';
 import { ThemeContext } from './theme-context';
 import type { ThemeContextValue } from './theme-context';
 import { UPDATE_THEME_MUTATION } from '../lib/graphql-queries';
+import {
+  resolve_initial_theme,
+  write_stored_theme,
+  type Theme,
+} from './theme-storage';
 
 interface User {
   id: string;
@@ -17,19 +22,17 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
-const getInitialTheme = (): 'light' | 'dark' => {
-  const saved = localStorage.getItem('theme-preference') as 'light' | 'dark' | null;
-  return saved || 'light';
-};
-
-const applyTheme = (newTheme: 'light' | 'dark') => {
+// Storage access lives in theme-storage.ts, which also guards against
+// localStorage throwing in private browsing, and falls back to the OS
+// preference rather than hardcoding light.
+const applyTheme = (newTheme: Theme) => {
   document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme-preference', newTheme);
+  write_stored_theme(newTheme);
 };
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const { user } = useAuth() as { user: User | null };
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => getInitialTheme());
+  const [theme, setThemeState] = useState<Theme>(resolve_initial_theme);
   const [isLoading, setIsLoading] = useState(false);
 
   const [updateThemeMutation] = useMutation(UPDATE_THEME_MUTATION, {

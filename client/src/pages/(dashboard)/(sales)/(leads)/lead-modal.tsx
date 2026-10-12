@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { Lead, LeadInput } from '../../../../types/lead';
+import type { LeadStatus } from '../../../../types/common';
+import { LEAD_STATUSES } from '../../../../types/common';
+import { Button, Input, Modal, Select, Textarea } from '../../../../components/ui';
 
 interface User {
   id: string;
@@ -10,162 +13,173 @@ interface User {
 interface LeadModalProps {
   lead: Lead | null;
   users: User[];
+  saving?: boolean;
   on_save: (input: LeadInput) => void;
   on_close: () => void;
 }
 
-const LeadModal = ({ lead, users, on_save, on_close }: LeadModalProps) => {
-  const [form_data, set_form_data] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    status: 'Open',
-    assigned_rep_id: '',
-    sales_notes: '',
-    archive_notes: '',
-  });
+const empty_form = {
+  name: '',
+  email: '',
+  phone: '',
+  status: 'Open',
+  assigned_rep_id: '',
+  sales_notes: '',
+  archive_notes: '',
+};
+
+/** Client-side checks mirroring the server's zod rules, for instant feedback. */
+const validate = (form: typeof empty_form) => {
+  const errors: Partial<Record<keyof typeof empty_form, string>> = {};
+
+  if (!form.name.trim()) errors.name = 'Name is required';
+  else if (form.name.length > 40) errors.name = 'Name must be 40 characters or less';
+  else if (!/^[a-zA-Z0-9\s\-']+$/.test(form.name)) {
+    errors.name = 'Only letters, numbers, spaces, hyphens and apostrophes';
+  }
+
+  if (!form.email.trim()) errors.email = 'Email is required';
+  else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.email)) {
+    errors.email = 'Enter a valid email address';
+  }
+
+  if (!form.phone.trim()) errors.phone = 'Phone is required';
+  else if (form.phone.length > 20) errors.phone = 'Phone must be 20 characters or less';
+
+  return errors;
+};
+
+const LeadModal = ({ lead, users, saving, on_save, on_close }: LeadModalProps) => {
+  const [form_data, set_form_data] = useState(empty_form);
+  const [errors, set_errors] = useState<ReturnType<typeof validate>>({});
+  // Errors appear only after a submit attempt, rather than scolding the user
+  // for a field they have not finished typing.
+  const [submitted, set_submitted] = useState(false);
 
   useEffect(() => {
-    if (lead) {
-      set_form_data({
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone,
-        status: lead.status,
-        assigned_rep_id: lead.assigned_rep?.id || '',
-        sales_notes: lead.sales_notes || '',
-        archive_notes: lead.archive_notes || '',
-      });
+    if (!lead) {
+      set_form_data(empty_form);
+      set_errors({});
+      set_submitted(false);
+      return;
     }
+    set_form_data({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      status: lead.status,
+      assigned_rep_id: lead.assigned_rep?.id || '',
+      sales_notes: lead.sales_notes || '',
+      archive_notes: lead.archive_notes || '',
+    });
   }, [lead]);
 
-  const handle_change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    set_form_data((prev) => ({ ...prev, [name]: value }));
+  const update = (field: keyof typeof empty_form) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const next = { ...form_data, [field]: event.target.value };
+    set_form_data(next);
+    if (submitted) set_errors(validate(next));
   };
 
-  const handle_submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handle_submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    set_submitted(true);
+
+    const found = validate(form_data);
+    set_errors(found);
+    if (Object.keys(found).length > 0) return;
+
     const { name, email, phone, status, assigned_rep_id, sales_notes, archive_notes } = form_data;
-    const input: LeadInput = {
+    on_save({
       name,
       email,
       phone,
-      status: status as any,
-      ...(assigned_rep_id && { assigned_rep_id }),
+      status: status as LeadStatus,
+      assigned_rep_id: assigned_rep_id || null,
       ...(sales_notes && { sales_notes }),
       ...(archive_notes && { archive_notes }),
-    };
-    on_save(input);
+    });
   };
 
   return (
-    <div className="modal-overlay" onClick={on_close}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{lead ? 'Edit Lead' : 'New Lead'}</h2>
-          <button className="modal-close" onClick={on_close}>
-            ✕
-          </button>
-        </div>
+    <Modal
+      title={lead ? 'Edit Lead' : 'New Lead'}
+      on_close={on_close}
+      footer={
+        <>
+          <Button onClick={on_close} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" form="lead-form" loading={saving}>
+            {lead ? 'Update' : 'Create'}
+          </Button>
+        </>
+      }
+    >
+      {/* The submit button lives in the modal footer, outside this element, so
+          it is associated by form id rather than by nesting. */}
+      <form id="lead-form" onSubmit={handle_submit} noValidate>
+        <Input
+          label="Name"
+          required
+          value={form_data.name}
+          onChange={update('name')}
+          error={errors.name}
+        />
+        <Input
+          label="Email"
+          type="email"
+          required
+          value={form_data.email}
+          onChange={update('email')}
+          error={errors.email}
+        />
+        <Input
+          label="Phone"
+          required
+          value={form_data.phone}
+          onChange={update('phone')}
+          error={errors.phone}
+        />
 
-        <form onSubmit={handle_submit} className="modal-form">
-          <div className="form-group">
-            <label>Name *</label>
-            <input
-              type="text"
-              name="name"
-              value={form_data.name}
-              onChange={handle_change}
-                            required
-            />
-          </div>
+        <Select
+          label="Assigned Rep"
+          value={form_data.assigned_rep_id}
+          onChange={update('assigned_rep_id')}
+          placeholder="Unassigned"
+          hint="Assigning a rep moves the lead to Pending."
+          options={users.map((user) => ({ value: user.id, label: user.name }))}
+        />
 
-          <div className="form-group">
-            <label>Email *</label>
-            <input
-              type="email"
-              name="email"
-              value={form_data.email}
-              onChange={handle_change}
-                            required
-            />
-          </div>
+        {/* Status is fixed to Open on create; the server pins it too. */}
+        {lead && (
+          <Select
+            label="Status"
+            value={form_data.status}
+            onChange={update('status')}
+            hint="Setting this to Converted creates a linked customer."
+            options={LEAD_STATUSES.map((status) => ({ value: status, label: status }))}
+          />
+        )}
 
-          <div className="form-group">
-            <label>Phone *</label>
-            <input
-              type="tel"
-              name="phone"
-              value={form_data.phone}
-              onChange={handle_change}
-                            required
-            />
-          </div>
+        <Textarea
+          label="Sales Notes"
+          value={form_data.sales_notes}
+          onChange={update('sales_notes')}
+          rows={4}
+        />
 
-          <div className="form-group">
-            <label>Status</label>
-            <select name="status" value={form_data.status} onChange={handle_change}>
-              <option>Open</option>
-              <option>Pending</option>
-              <option>Archived</option>
-              <option>Converted</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Assigned Rep</label>
-            <select
-              name="assigned_rep_id"
-              value={form_data.assigned_rep_id}
-              onChange={handle_change}
-                          >
-              <option value="">Unassigned</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {form_data.status !== 'Archived' && (
-            <div className="form-group">
-              <label>Sales Notes</label>
-              <textarea
-                name="sales_notes"
-                value={form_data.sales_notes}
-                onChange={handle_change}
-                                rows={3}
-                placeholder="Track conversations, interests, objections..."
-              />
-            </div>
-          )}
-
-          {form_data.status === 'Archived' && (
-            <div className="form-group">
-              <label>Archive Notes</label>
-              <textarea
-                name="archive_notes"
-                value={form_data.archive_notes}
-                onChange={handle_change}
-                rows={3}
-                placeholder="Reason for archiving..."
-              />
-            </div>
-          )}
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={on_close}>
-              Close
-            </button>
-            <button type="submit" className="btn-primary">
-              {lead ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {form_data.status === 'Archived' && (
+          <Textarea
+            label="Archive Notes"
+            value={form_data.archive_notes}
+            onChange={update('archive_notes')}
+            rows={3}
+          />
+        )}
+      </form>
+    </Modal>
   );
 };
 

@@ -1,44 +1,66 @@
 import { test, expect } from '@playwright/test';
+import { login_as, create_lead, row_for, unique, DEMO_SALES } from './helpers';
 
-test('lead creation and conversion to customer', async ({ page }) => {
-  // Login as demo-sales
-  await page.goto('/');
-  await page.fill('input[type="email"]', 'demo-sales@example.com');
-  await page.fill('input[type="password"]', 'Demo123');
-  await page.click('button[type="submit"]');
-  await page.waitForURL('/dashboard', { waitUntil: 'networkidle' });
+test('a lead can be created and then converted into a customer', async ({ page }) => {
+  await login_as(page, DEMO_SALES);
+  await page.goto('/leads');
+  await expect(page.getByRole('heading', { name: 'Leads', level: 1 })).toBeVisible();
 
-  // Navigate to leads page
-  await page.goto('/dashboard/sales/leads');
-  await page.waitForLoadState('networkidle');
+  const name = unique('Convert Me');
+  await create_lead(page, name);
 
-  // Click "New Lead" button
-  await page.click('button:has-text("+ New Lead")');
+  const row = row_for(page, name);
+  await expect(row).toBeVisible();
+  await expect(row).toContainText('Open');
 
-  // Fill lead form
-  const lead_name = `Test Lead ${Date.now()}`;
-  await page.fill('input[name="name"]', lead_name);
-  await page.fill('input[name="email"]', `lead-${Date.now()}@test.com`);
-  await page.fill('input[name="phone"]', '555-0123');
+  // Conversion is an update: the create schema pins status to Open.
+  await row.getByRole('button', { name: 'Edit' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Status').selectOption('Converted');
+  await dialog.getByRole('button', { name: 'Update' }).click();
+  await expect(dialog).toBeHidden();
 
-  // Change status to Converted
-  await page.selectOption('select[name="status"]', 'Converted');
+  // Converting auto-creates a Customer and back-links it.
+  const converted = row_for(page, name);
+  await expect(converted).toContainText('Converted');
+  await expect(converted.locator('td[data-label="Converted To"]')).not.toHaveText('—');
+});
 
-  // Submit form
-  await page.click('button[type="submit"]:has-text("Create")');
+test('a converted lead becomes read-only', async ({ page }) => {
+  await login_as(page, DEMO_SALES);
+  await page.goto('/leads');
 
-  // Wait for modal to close and table to update
-  await page.waitForTimeout(500);
-  await page.reload();
-  await page.waitForLoadState('networkidle');
+  const name = unique('Read Only');
+  await create_lead(page, name);
 
-  // Verify the lead appears in the table with "Converted To" showing a customer name
-  const lead_row = page.locator(`text=${lead_name}`).locator('..').locator('..');
-  await expect(lead_row).toBeVisible();
+  const row = row_for(page, name);
+  await row.getByRole('button', { name: 'Edit' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Status').selectOption('Converted');
+  await dialog.getByRole('button', { name: 'Update' }).click();
+  await expect(dialog).toBeHidden();
 
-  // Check that Converted To column has a customer name (not just "-")
-  const converted_to_cell = lead_row.locator('td').nth(5); // "Converted To" is the 6th column (0-indexed)
-  const cell_text = await converted_to_cell.textContent();
-  expect(cell_text).not.toBe('-');
-  expect(cell_text?.trim().length).toBeGreaterThan(0);
+  // Terminal states swap Edit for View, and drop the archive action.
+  const converted = row_for(page, name);
+  await expect(converted.getByRole('button', { name: 'View' })).toBeVisible();
+  await expect(converted.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+  await expect(converted.getByRole('button', { name: 'Archive' })).toHaveCount(0);
+});
+
+test('invalid input is reported per field rather than silently rejected', async ({ page }) => {
+  await login_as(page, DEMO_SALES);
+  await page.goto('/leads');
+
+  await page.getByRole('button', { name: 'New Lead' }).click();
+  const dialog = page.getByRole('dialog');
+
+  await dialog.getByLabel('Name').fill('Valid Name');
+  await dialog.getByLabel('Email').fill('not-an-email');
+  await dialog.getByLabel('Phone').fill('555-0000');
+  await dialog.getByRole('button', { name: 'Create' }).click();
+
+  // Forms previously had native `required` and nothing else, so a bad email
+  // reached the server and came back as a blocking alert.
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Enter a valid email address')).toBeVisible();
 });

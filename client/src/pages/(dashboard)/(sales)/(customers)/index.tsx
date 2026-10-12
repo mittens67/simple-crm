@@ -1,149 +1,134 @@
-import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Building2, Plus } from 'lucide-react';
 import { useAuth } from '../../../../auth/auth-context';
 import { useCustomers, useUsers } from '../../../../hooks';
-import { useDialog } from '../../../../components/dialogs/DialogProvider';
+import { useResourcePage } from '../../../../hooks/use-resource-page';
 import type { Customer, CustomerInput } from '../../../../types/customer';
-import LoadingSpinner from '../../../../components/ui/loading-spinner';
+import {
+  Button,
+  CopyableText,
+  DataTable,
+  EmptyState,
+  Pagination,
+  type Column,
+} from '../../../../components/ui';
+import ListPage from '../../../../components/layout/list-page';
 import CustomerModal from './customer-modal';
-import '../(leads)/leads.scss';
 
 const Customers = () => {
   const { can } = useAuth();
-  const { customers, loading, create, update, delete: deleteCustomer, setError: setCustomers_error } = useCustomers();
-  const { users } = useUsers();
-  const { showAlert, showConfirm } = useDialog();
-  const [modal_open, set_modal_open] = useState(false);
-  const [editing, set_editing] = useState<Customer | null>(null);
-  const [search_input, set_search_input] = useState('');
+  const customers = useCustomers();
+  const { items: users } = useUsers();
 
-  const filtered_customers = customers.filter((customer: Customer) =>
-    customer.name.toLowerCase().includes(search_input.toLowerCase()) ||
-    customer.email.toLowerCase().includes(search_input.toLowerCase())
-  );
+  const page = useResourcePage<Customer, CustomerInput>({ crud: customers, noun: 'customer' });
 
-  const handle_create = async (input: CustomerInput) => {
-    try {
-      await create(input);
-      set_modal_open(false);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to create customer';
-      setCustomers_error(error_msg);
-      await showAlert('Error', `Error creating customer: ${error_msg}`);
-    }
-  };
-
-  const handle_update = async (input: CustomerInput) => {
-    if (!editing) return;
-    try {
-      await update(editing.id, input);
-      set_modal_open(false);
-      set_editing(null);
-    } catch (err) {
-      const error_msg = err instanceof Error ? err.message : 'Failed to update customer';
-      setCustomers_error(error_msg);
-      await showAlert('Error', `Error updating customer: ${error_msg}`);
-    }
-  };
-
-  const handle_delete = async (id: string) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Customer',
-      message: 'Are you sure you want to delete this customer?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    });
-    if (confirmed) {
-      try {
-        await deleteCustomer(id);
-      } catch (err) {
-        const error_msg = err instanceof Error ? err.message : 'Failed to delete customer';
-        setCustomers_error(error_msg);
-        await showAlert('Error', `Error deleting customer: ${error_msg}`);
-      }
-    }
-  };
-
-  const handle_open_create = () => {
-    set_editing(null);
-    set_modal_open(true);
-  };
-
-  const handle_open_edit = (customer: Customer) => {
-    set_editing(customer);
-    set_modal_open(true);
-  };
-
-  const handle_close_modal = () => {
-    set_modal_open(false);
-    set_editing(null);
-  };
-
-  if (loading) return <LoadingSpinner />;
+  const columns: Column<Customer>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      sort_value: (customer) => customer.name,
+      render: (customer) => (
+        <Link to={`/customers/${customer.id}`} className="list-cell-primary">
+          {customer.name}
+        </Link>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      sort_value: (customer) => customer.email,
+      render: (customer) => <CopyableText value={customer.email} label="email address" truncate />,
+    },
+    {
+      key: 'phone',
+      header: 'Phone',
+      hide_on_mobile: true,
+      render: (customer) => <CopyableText value={customer.phone} label="phone number" />,
+    },
+    {
+      key: 'rep',
+      header: 'Assigned Rep',
+      sort_value: (customer) => customer.assigned_rep?.name ?? null,
+      hide_on_mobile: true,
+      render: (customer) =>
+        customer.assigned_rep?.name ?? <span className="muted">Unassigned</span>,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (customer) => (
+        <div className="list-row-actions">
+          {can('customers.update') && (
+            <Button size="sm" onClick={() => page.open_edit(customer)}>
+              Edit
+            </Button>
+          )}
+          {can('customers.delete') && (
+            <Button size="sm" variant="danger" onClick={() => page.remove(customer.id)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="leads">
-      <div className="leads-header">
-        <h1>Customers</h1>
-        {can('customers.create') && (
-          <button className="btn-primary" onClick={handle_open_create}>
-            + New Customer
-          </button>
-        )}
-      </div>
+    <ListPage
+      title="Customers"
+      description="Accounts you have won, and the reps who own them."
+      search={{
+        value: page.search_input,
+        on_change: page.set_search_input,
+        placeholder: 'Search customers by name, email, or phone',
+        result_count: customers.total,
+      }}
+      actions={
+        can('customers.create') && (
+          <Button variant="primary" icon={<Plus />} onClick={page.open_create}>
+            New Customer
+          </Button>
+        )
+      }
+    >
+      <DataTable
+        caption="Customers"
+        columns={columns}
+        rows={customers.items}
+        row_key={(customer) => customer.id}
+        loading={customers.loading}
+        empty={
+          <EmptyState
+            icon={<Building2 />}
+            title={page.search_input ? 'No customers match that search' : 'No customers yet'}
+            description={
+              page.search_input
+                ? 'Try a different name, email or phone number.'
+                : 'Customers are created automatically when a lead converts.'
+            }
+          />
+        }
+      />
 
-      <div className="leads-search">
-        <input
-          type="text"
-          placeholder="Search customers..."
-          value={search_input}
-          onChange={(e) => set_search_input(e.target.value)}
-          disabled={loading}
-        />
-      </div>
+      <Pagination
+        offset={customers.offset}
+        limit={customers.limit}
+        total={customers.total}
+        on_previous={customers.previous_page}
+        on_next={customers.next_page}
+      />
 
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Assigned Rep</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered_customers.map((customer: Customer) => (
-            <tr key={customer.id}>
-              <td>{customer.name}</td>
-              <td>{customer.email}</td>
-              <td>{customer.phone}</td>
-              <td>{customer.assigned_rep?.name || 'Unassigned'}</td>
-              <td className="actions">
-                {can('customers.update') && (
-                  <button className="btn-small" onClick={() => handle_open_edit(customer)}>
-                    Edit
-                  </button>
-                )}
-                {can('customers.delete') && (
-                  <button className="btn-small btn-danger" onClick={() => handle_delete(customer.id)}>
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {modal_open && (
+      {page.modal_open && (
         <CustomerModal
-          customer={editing}
+          customer={page.editing}
           users={users}
-          on_save={editing ? handle_update : handle_create}
-          on_close={handle_close_modal}
+          saving={page.saving}
+          on_save={page.submit}
+          on_close={page.close_modal}
         />
       )}
-    </div>
+    </ListPage>
   );
 };
 

@@ -1,75 +1,36 @@
-import { GraphQLError } from 'graphql';
-import Customer from '../../models/customer';
-import User from '../../models/user';
 import { ApolloContext } from '../context';
-import { require_permission } from '../../auth/authorize';
+import { customer_service } from '../../services/customer';
+import { load_by_ref } from '../loaders';
+import { ICustomer } from '../../models/customer';
 
 export default {
   Query: {
-    customers: async (_: any, __: any, context: ApolloContext) => {
-      require_permission(context, 'customers.read');
-      return await Customer.find().populate('assigned_rep_id');
-    },
-    customer: async (_: any, { id }: any, context: ApolloContext) => {
-      require_permission(context, 'customers.read');
-      return await Customer.findById(id).populate('assigned_rep_id');
-    },
+    customers: (
+      _: unknown,
+      args: { search?: string; limit?: number; offset?: number },
+      context: ApolloContext
+    ) => customer_service.list(context, args),
+
+    customer: (_: unknown, { id }: { id: string }, context: ApolloContext) =>
+      customer_service.get(context, id),
   },
 
   Mutation: {
-    createCustomer: async (_: any, { input }: any, context: ApolloContext) => {
-      require_permission(context, 'customers.create');
-      const { name, email, phone, assigned_rep_id } = input;
+    createCustomer: (_: unknown, { input }: { input: unknown }, context: ApolloContext) =>
+      customer_service.create(context, input),
 
-      if (assigned_rep_id) {
-        const rep = await User.findById(assigned_rep_id);
-        if (!rep) {
-          throw new GraphQLError('Assigned sales rep not found', {
-            extensions: { code: 'BAD_USER_INPUT' },
-          });
-        }
-      }
+    updateCustomer: (
+      _: unknown,
+      { id, input }: { id: string; input: unknown },
+      context: ApolloContext
+    ) => customer_service.update(context, id, input),
 
-      const customer = new Customer({
-        name,
-        email,
-        phone,
-        ...(assigned_rep_id && { assigned_rep_id })
-      });
-      await customer.save();
-      return customer;
-    },
-
-    updateCustomer: async (_: any, { id, input }: any, context: ApolloContext) => {
-      require_permission(context, 'customers.update');
-
-      const customer = await Customer.findById(id);
-      if (!customer) throw new GraphQLError('Customer not found');
-
-      if (input.assigned_rep_id) {
-        const rep_exists = await User.findById(input.assigned_rep_id);
-        if (!rep_exists) {
-          throw new GraphQLError('Assigned sales rep not found', {
-            extensions: { code: 'BAD_USER_INPUT' },
-          });
-        }
-      }
-
-      Object.assign(customer, input);
-      await customer.save();
-      return customer;
-    },
-
-    deleteCustomer: async (_: any, { id }: any, context: ApolloContext) => {
-      require_permission(context, 'customers.delete');
-      const res = await Customer.findByIdAndDelete(id);
-      return !!res;
-    },
+    deleteCustomer: (_: unknown, { id }: { id: string }, context: ApolloContext) =>
+      customer_service.remove(context, id),
   },
 
   Customer: {
-    assigned_rep: async (parent: any) => {
-      return await User.findById(parent.assigned_rep_id);
-    },
+    assigned_rep: (customer: ICustomer, _: unknown, context: ApolloContext) =>
+      load_by_ref(context.loaders.user, customer.assigned_rep_id),
   },
 };
